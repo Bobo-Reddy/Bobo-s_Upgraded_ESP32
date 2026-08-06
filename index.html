@@ -139,8 +139,8 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 </header>
 
 <div class="route" role="group" aria-label="How to reach the node">
-  <button type="button" id="tabBle"  aria-pressed="true">Bluetooth</button>
-  <button type="button" id="tabWifi" aria-pressed="false">Node's WiFi</button>
+  <button type="button" id="tabBle"  aria-pressed="true">Android/Windows</button>
+  <button type="button" id="tabWifi" aria-pressed="false">iOS</button>
 </div>
 
 <div id="msg" class="msg"></div>
@@ -160,7 +160,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 
   <form id="f" onsubmit="return false">
     <label><span class="lbl">Description</span>
-      <input name="desc" id="desc" required placeholder="Chem building roof">
+      <input name="desc" id="desc" required placeholder="Eg: Bobo's household">
     </label>
 
     <label><span class="lbl">SSID</span>
@@ -176,7 +176,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 
     <label><span class="lbl">Username</span>
       <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <span class="hint">Only for eduroam-style networks that ask for an account name
+      <span class="hint">Only for enterprise-style networks that ask for an account name
         as well as a password. Leave blank for an ordinary WiFi network.</span>
     </label>
 
