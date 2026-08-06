@@ -534,26 +534,46 @@ async function connect() {
         + 'or press "Erase stored settings" on its own setup page.');
     }
   }
+  const missing = [];
   for (const [k, uuid] of Object.entries(CH)) {
     try { chars[k] = await svc.getCharacteristic(uuid); }
-    catch (e) { chars[k] = null; }   // older firmware has no username field
+    catch (e) { chars[k] = null; missing.push(k); }
+  }
+  log('service found, ' + (Object.keys(CH).length - missing.length) + ' of '
+      + Object.keys(CH).length + ' fields available', 'hi');
+  if (missing.length) log('this node has no: ' + missing.join(', '), 'no');
+
+  /* Reading the MAC and subscribing to the node's status are conveniences,
+     not requirements. Some stacks refuse one or the other, and that must
+     not cost the whole provisioning run. */
+  if (chars.mac) {
+    try { mac = new TextDecoder().decode(await chars.mac.readValue()); }
+    catch (e) { log('could not read the MAC: ' + e.message, 'no'); }
   }
 
-  if (chars.mac) mac = new TextDecoder().decode(await chars.mac.readValue());
   if (chars.status) {
-    await chars.status.startNotifications();
-    chars.status.addEventListener('characteristicvaluechanged',
-      e => log(new TextDecoder().decode(e.target.value)));
+    try {
+      await chars.status.startNotifications();
+      chars.status.addEventListener('characteristicvaluechanged',
+        e => log(new TextDecoder().decode(e.target.value)));
+    } catch (e) {
+      log('no live status from this node: ' + e.message, 'no');
+    }
   }
+
   if (chars.prog) {
-    await chars.prog.startNotifications();
-    chars.prog.addEventListener('characteristicvaluechanged',
-      e => log('firmware update ' + new TextDecoder().decode(e.target.value) + '%'));
+    try {
+      await chars.prog.startNotifications();
+      chars.prog.addEventListener('characteristicvaluechanged',
+        e => log('firmware update ' + new TextDecoder().decode(e.target.value) + '%'));
+    } catch (e) {
+      log('no update progress from this node', 'no');
+    }
   }
 
   $('link').innerHTML = 'Linked to <b>' + (mac || device.name || 'node') + '</b>';
-  log('connected to ' + (mac || device.name), 'hi');
-  if (!chars.user) log('this node runs older firmware: no username field', 'no');
+  log('connected to ' + (mac || device.name || 'node'), 'hi');
+  if (!mac) log('no MAC read \u2014 the node will write its own record instead', 'no');
 }
 
 /* Returns whether the value landed. Nothing here throws: one optional
@@ -614,8 +634,13 @@ $('send').onclick = async () => {
   stopScan();
   const b = $('send'); b.disabled = true; b.textContent = 'Connecting\u2026';
   try {
-    if (!chars.ssid) { say('Pick your node from the list your browser shows.', 'info'); await connect(); }
+    if (!chars.ssid) {
+      say('Pick your node from the list your browser shows.', 'info');
+      log('opening the device picker', 'hi');
+      await connect();
+    }
     b.textContent = 'Sending\u2026';
+    log('writing settings', 'hi');
 
     /* Optional fields go first and are allowed to fail. An empty username
        is only sent when the node already has one stored, since that is
