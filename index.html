@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070c0e">
+<title>SACAQM Node Configuration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#070c0e; --shell:#0f171a; --shell2:#131e22; --edge:#1e2c31; --edge2:#2a3c42;
+  --chalk:#e6edef; --vapor:#8ba0a7; --dim:#5d7077;
+  --b1:#3de0b4; --b2:#c8dd57; --b3:#e8a13f; --b4:#e2544a;
+  --display:'Anybody',system-ui,sans-serif;
+  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;background:var(--void);color:var(--chalk);
+  font-family:var(--sans);font-size:16px;line-height:1.55;padding-bottom:64px;
+  background-image:
+    radial-gradient(760px 420px at 10% -8%, rgba(61,224,180,.10), transparent 62%),
+    radial-gradient(620px 400px at 94% 3%, rgba(232,161,63,.055), transparent 60%);
+  background-attachment:fixed}
+.wrap{max-width:600px;margin:0 auto;padding:0 20px}
+
+header{padding:42px 0 8px}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim)}
+h1{font-family:var(--display);font-size:clamp(29px,7.6vw,40px);font-weight:800;
+  line-height:1.03;letter-spacing:-.01em;margin:12px 0 10px;
+  background:linear-gradient(96deg,var(--chalk) 32%,var(--b1));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--vapor);font-size:15px;max-width:46ch}
+
+.route{display:flex;gap:8px;margin:24px 0 22px;padding:5px;background:#0a1215;
+  border:1px solid var(--edge);border-radius:11px}
+.route button{flex:1;width:auto;margin:0;padding:10px 8px;font-size:13.5px;
+  background:transparent;border:1px solid transparent;color:var(--dim);font-weight:600}
+.route button[aria-pressed="true"]{background:var(--shell2);border-color:var(--edge2);
+  color:var(--chalk)}
+.route button:hover{box-shadow:none;color:var(--chalk)}
+
+.card{background:linear-gradient(180deg,var(--shell2),var(--shell));
+  border:1px solid var(--edge);border-radius:14px;padding:22px;margin-bottom:16px;
+  box-shadow:0 22px 54px -38px #000}
+.card h2{font-family:var(--display);font-size:17px;font-weight:700;margin:0 0 6px;
+  letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+.card h2::after{content:"";flex:1;height:1px;background:var(--edge)}
+.card .lede{color:var(--vapor);font-size:14px;margin:0 0 18px}
+.link{font-family:var(--mono);font-size:12px;color:var(--vapor);letter-spacing:.03em;
+  border:1px dashed var(--edge2);border-radius:10px;padding:12px 14px;margin-bottom:18px}
+.link b{color:var(--b1);font-weight:500}
+
+label{display:block;margin:0 0 17px}
+.lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px}
+.lbl a{color:var(--b1);text-decoration:none;letter-spacing:.08em;cursor:pointer}
+.hint{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.5}
+input,select{width:100%;padding:12px 13px;font:inherit;font-size:16px;color:var(--chalk);
+  background:#0a1215;border:1px solid var(--edge2);border-radius:9px;
+  transition:border-color .18s,box-shadow .18s}
+input::placeholder{color:#465960}
+input:focus,select:focus{outline:none;border-color:var(--b1);
+  box-shadow:0 0 0 3px rgba(61,224,180,.15)}
+select{appearance:none;background-image:
+  linear-gradient(45deg,transparent 50%,var(--vapor) 50%),
+  linear-gradient(135deg,var(--vapor) 50%,transparent 50%);
+  background-position:calc(100% - 19px) 50%,calc(100% - 14px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+button,.btnlink{font:inherit;font-weight:600;border-radius:9px;padding:13px 18px;
+  cursor:pointer;width:100%;border:1px solid var(--b1);color:#04110d;
+  background:linear-gradient(180deg,#5ceec6,var(--b1));display:block;text-align:center;
+  text-decoration:none;transition:transform .12s,box-shadow .18s,opacity .18s}
+button:hover:not(:disabled),.btnlink:hover{box-shadow:0 0 26px -6px rgba(61,224,180,.55)}
+button:active:not(:disabled),.btnlink:active{transform:translateY(1px)}
+button:disabled{opacity:.42;cursor:default}
+.btnlink.off{pointer-events:none;opacity:.4}
+button.ghost{width:auto;padding:9px 13px;font-size:13px;background:transparent;
+  color:var(--b1);border-color:var(--edge2);margin-top:8px}
+button.ghost:hover:not(:disabled){border-color:var(--b1);box-shadow:none}
+button:focus-visible,.btnlink:focus-visible,input:focus-visible{outline:2px solid var(--chalk);
+  outline-offset:2px}
+hr{border:0;border-top:1px solid var(--edge);margin:22px 0}
+
+#scanner{margin:0 0 17px;border:1px solid var(--b1);border-radius:12px;overflow:hidden;
+  background:#000;position:relative}
+#cam{width:100%;display:block;max-height:340px;object-fit:cover}
+#reticle{position:absolute;inset:14% 14%;border:2px solid var(--b1);border-radius:12px;
+  pointer-events:none;box-shadow:0 0 0 9999px rgba(7,12,14,.45)}
+.scanbar{display:flex;gap:10px;align-items:center;padding:11px 13px;background:#0a1215;
+  border-top:1px solid var(--edge)}
+.scanbar span{flex:1;font-family:var(--mono);font-size:11.5px;color:var(--vapor)}
+.scanbar button{width:auto;padding:7px 12px;font-size:13px;background:transparent;
+  color:var(--b4);border-color:rgba(226,84,74,.4);margin:0}
+
+ol.steps{margin:0 0 18px;padding:0;list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding-left:36px;margin-bottom:12px;
+  font-size:14.5px;color:var(--vapor)}
+ol.steps li b{color:var(--chalk);font-weight:600}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:24px;height:24px;
+  border-radius:7px;background:#0a1215;border:1px solid var(--edge2);
+  font-family:var(--mono);font-size:11.5px;color:var(--b1);display:grid;place-items:center}
+.ssidchip{font-family:var(--mono);font-size:13px;background:#0a1215;
+  border:1px solid var(--edge2);padding:2px 7px;border-radius:5px;color:var(--b1)}
+.fallbackline{font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center}
+.fallbackline a{color:var(--vapor);cursor:pointer}
+
+.msg{padding:12px 15px;border-radius:10px;font-size:14px;margin-bottom:16px;display:none;
+  border:1px solid}
+.msg.on{display:block}
+.msg.ok  {background:rgba(61,224,180,.08);color:var(--b1);border-color:rgba(61,224,180,.3)}
+.msg.err {background:rgba(226,84,74,.08); color:var(--b4);border-color:rgba(226,84,74,.3)}
+.msg.info{background:rgba(232,161,63,.08);color:var(--b3);border-color:rgba(232,161,63,.3)}
+
+.log{font-family:var(--mono);font-size:12px;color:var(--vapor);max-height:210px;
+  overflow:auto;background:#0a1215;border:1px solid var(--edge);border-radius:10px;
+  padding:12px 14px}
+.log div{padding:2px 0 2px 10px;border-left:2px solid var(--edge);margin-bottom:2px;
+  word-break:break-word}
+.log div.hi{border-left-color:var(--b1);color:var(--chalk)}
+.log div.no{border-left-color:var(--b4);color:var(--b4)}
+.log .idle{border:0;padding-left:0;color:var(--dim)}
+code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid var(--edge2);
+  padding:2px 6px;border-radius:5px;color:var(--b1)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body><div class="wrap">
+
+<header>
+  <div class="eyebrow">SACAQM &middot; low-range node</div>
+  <h1>Node provisioning</h1>
+  <p class="sub">Scan the network, capture the position, send it to the node.</p>
+</header>
+
+<div class="route" role="group" aria-label="How to reach the node">
+  <button type="button" id="tabBle"  aria-pressed="true">Android/Windows</button>
+  <button type="button" id="tabWifi" aria-pressed="false">iOS</button>
+</div>
+
+<div id="msg" class="msg"></div>
+
+<div class="card">
+  <h2>Node configuration</h2>
+  <p class="lede">Same details either way. Fill these in first.</p>
+
+  <div id="scanner" hidden>
+    <video id="cam" playsinline muted></video>
+    <div id="reticle"></div>
+    <div class="scanbar">
+      <span id="scanmsg">Point at the WiFi QR code</span>
+      <button type="button" id="scanstop">Stop</button>
+    </div>
+  </div>
+
+  <form id="f" onsubmit="return false">
+    <label><span class="lbl">Description</span>
+      <input name="desc" id="desc" required placeholder="Eg: Bobo's household">
+    </label>
+
+    <label><span class="lbl">SSID</span>
+      <input name="ssid" id="ssid" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+      <button type="button" class="ghost" id="scan">Scan WiFi QR code</button>
+      <span class="hint">Works with the QR your router prints, and with the one your
+        phone makes under <b>Share password</b>.</span>
+    </label>
+
+    <label><span class="lbl">Password <a id="toggle">hide</a></span>
+      <input name="pass" id="pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+    </label>
+
+    <label><span class="lbl">Username</span>
+      <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <span class="hint">Only for enterprise-style networks that ask for an account name
+        as well as a password. Leave blank for an ordinary WiFi network.</span>
+    </label>
+
+    <hr>
+
+    <label><span class="lbl">Type</span>
+      <select name="type" id="type">
+        <option value="2">Outdoor</option>
+        <option value="1">Indoor</option>
+      </select>
+    </label>
+
+    <label style="margin-bottom:0"><span class="lbl">GPS</span>
+      <input name="gps" id="gps" inputmode="decimal" placeholder="-26.190000,28.030000">
+      <button type="button" class="ghost" id="geo">Auto capture GPS</button>
+      <span class="hint">Or paste a Maps share link &mdash; the coordinates get pulled
+        out of it.</span>
+    </label>
+  </form>
+</div>
+
+<!-- ---------- Bluetooth route ---------- -->
+<div class="card" id="paneBle">
+  <h2>Send over Bluetooth</h2>
+  <p class="lede">Android, Windows, macOS, ChromeOS. Chrome or Edge.</p>
+  <div class="link" id="link">Standby &middot; power the node and wait for the blue blink</div>
+  <button type="button" id="send">Connect &amp; send</button>
+</div>
+
+<!-- ---------- WiFi route ---------- -->
+<div class="card" id="paneWifi" hidden>
+  <h2>Send over the node's WiFi</h2>
+  <p class="lede">Any phone, including iPhone. Do the three steps in this order and
+    stay on this page throughout.</p>
+
+  <ol class="steps">
+    <li>Fill in everything above, including the QR scan and <b>Auto capture GPS</b>.
+      Both work here, and neither works on the node's own page.</li>
+    <li>Open <b>Settings &rarr; Wi-Fi</b> and join
+      <span class="ssidchip">SACAQM-Setup-XXXX</span> with the password
+      <span class="ssidchip">sacaqm-setup</span>. Dismiss the sign-in sheet if one
+      pops up, and come back here.</li>
+    <li>Tap the button. The node's page opens with everything already filled in
+      &mdash; check it and press <b>Save and connect</b>.</li>
+  </ol>
+
+  <a class="btnlink off" id="openNode" href="#" rel="noopener">Open the node's setup page</a>
+  <p class="fallbackline">Button not working? <a id="showcopy">Copy the link instead</a></p>
+  <div id="copywrap" hidden style="margin-top:12px">
+    <div class="link" id="hlink" style="color:var(--b1)"></div>
+    <button type="button" class="ghost" id="copylink">Copy setup link</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Status &amp; logs</h2>
+  <div class="log" id="log"><div class="idle">Waiting for a node.</div></div>
+  <p class="hint" style="margin-top:14px">The node is working when the setup network
+    disappears, <code>ESP32-Provision</code> stops advertising, and the LED flashes
+    green for five seconds every five minutes. A steady red LED means the last upload
+    was refused.</p>
+</div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+/* Optional: a Cloudflare Worker that keeps a record of what was
+   provisioned. Leave as '' to skip it entirely. */
+const WORKER_URL    = '';
+const WORKER_SECRET = '';
+
+/* How the config records spell the role. Must match IO_INDOOR and
+   IO_OUTDOOR in the firmware. */
+const IO_INDOOR  = '0';
+const IO_OUTDOOR = '1';
+
+/* Whether the WiFi password goes into the record. Off: the node keeps it
+   in its own flash and the repo never sees it. On: the record can move a
+   node to a different network without a site visit, at the cost of the
+   password sitting in the repository. */
+const SEND_PASSWORD = false;
+
+const NODE_URL = 'http://192.168.4.1/';
+
+const SERVICE = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CH = {
+  ssid:   'beb5483e-36e1-4688-b7f5-ea07361b26a8',
+  pass:   'beb5483e-36e1-4688-b7f5-ea07361b26a9',
+  status: 'beb5483e-36e1-4688-b7f5-ea07361b26aa',
+  desc:   'beb5483e-36e1-4688-b7f5-ea07361b26ab',
+  type:   'beb5483e-36e1-4688-b7f5-ea07361b26ac',
+  gps:    'beb5483e-36e1-4688-b7f5-ea07361b26ad',
+  prog:   'beb5483e-36e1-4688-b7f5-ea07361b26ae',
+  mac:    'beb5483e-36e1-4688-b7f5-ea07361b26af',
+  user:   'beb5483e-36e1-4688-b7f5-ea07361b26b0'
+};
+
+const $ = id => document.getElementById(id);
+let chars = {}, mac = '', stream = null, scanning = false;
+
+function say(t, kind) { const m = $('msg'); m.textContent = t; m.className = 'msg on ' + kind; }
+
+function log(line, kind) {
+  const l = $('log');
+  const idle = l.querySelector('.idle'); if (idle) idle.remove();
+  const d = document.createElement('div');
+  d.textContent = line; if (kind) d.className = kind;
+  l.appendChild(d); l.scrollTop = l.scrollHeight;
+}
+
+/* ---------------- route tabs ---------------- */
+
+function route(which) {
+  const ble = which === 'ble';
+  $('paneBle').hidden  = !ble;
+  $('paneWifi').hidden = ble;
+  $('tabBle').setAttribute('aria-pressed', ble);
+  $('tabWifi').setAttribute('aria-pressed', !ble);
+}
+$('tabBle').onclick  = () => route('ble');
+$('tabWifi').onclick = () => route('wifi');
+
+/* Web Bluetooth does not exist on iOS — no browser there has it, so the
+   WiFi route is the only one that will work. Start people on it. */
+if (!navigator.bluetooth) {
+  route('wifi');
+  $('tabBle').disabled = true;
+  $('send').disabled = true;
+  $('link').innerHTML = 'This browser has no Bluetooth. Use the node&rsquo;s WiFi instead.';
+  say('This browser cannot use Bluetooth, which is the case for every browser on '
+    + 'iPhone and iPad. The WiFi route below works.', 'info');
+}
+
+/* ---------------- WiFi QR codes ---------------- */
+
+/* A WiFi QR payload looks like WIFI:T:WPA;S:name;P:secret;;  with
+   semicolons, colons, commas and backslashes inside values escaped by a
+   backslash. Enterprise codes add E: for the EAP method and I: for the
+   account name. */
+function parseWifiQr(text) {
+  if (!/^WIFI:/i.test(text)) return null;
+  const out = {};
+  let key = '', val = '', esc = false, onKey = true;
+  const flush = () => { if (key) out[key.toUpperCase()] = val; key = ''; val = ''; onKey = true; };
+
+  for (const ch of text.slice(5)) {
+    if (esc) { val += ch; esc = false; continue; }
+    if (ch === '\\') { esc = true; continue; }
+    if (ch === ':' && onKey) { onKey = false; continue; }
+    if (ch === ';') { flush(); continue; }
+    if (onKey) key += ch; else val += ch;
+  }
+  flush();
+
+  if (!out.S) return null;
+  return {
+    ssid: out.S,
+    pass: out.P || '',
+    user: out.I || '',
+    enterprise: /EAP/i.test(out.T || '') || !!out.I
+  };
+}
+
+async function startScan() {
+  if (!navigator.mediaDevices || !window.jsQR) {
+    return say('This browser will not open the camera here. Type the network name '
+             + 'and password instead.', 'err');
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } }, audio: false
+    });
+  } catch (e) {
+    return say('The camera was refused. Allow camera access for this page in your '
+             + 'browser settings, or type the network details in by hand.', 'err');
+  }
+
+  const video = $('cam');
+  video.srcObject = stream;
+  video.setAttribute('playsinline', '');
+  await video.play();
+
+  $('scanner').hidden = false;
+  $('scanmsg').textContent = 'Point at the WiFi QR code';
+  scanning = true;
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  const tick = () => {
+    if (!scanning) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const found = window.jsQR(img.data, img.width, img.height,
+                               { inversionAttempts: 'dontInvert' });
+      if (found) {
+        const wifi = parseWifiQr(found.data);
+        if (wifi) { applyWifi(wifi); return; }
+        $('scanmsg').textContent = 'That code is not a WiFi code';
+      }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function applyWifi(w) {
+  $('ssid').value = w.ssid;
+  if (w.pass) $('pass').value = w.pass;
+  if (w.user) $('user').value = w.user;
+  stopScan();
+  buildLink();
+  log('scanned network ' + w.ssid + (w.enterprise ? ' (enterprise)' : ''), 'hi');
+  say(w.enterprise
+      ? 'Scanned ' + w.ssid + '. Enterprise network \u2014 check the username is your '
+        + 'account name before sending.'
+      : 'Scanned ' + w.ssid + '. Check the password came through, then send.', 'ok');
+}
+
+function stopScan() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('cam').srcObject = null;
+  $('scanner').hidden = true;
+}
+
+$('scan').onclick = startScan;
+$('scanstop').onclick = stopScan;
+
+/* ---------------- coordinates ---------------- */
+
+/* Pulls a coordinate pair out of anything worth pasting: a plain
+   "lat,lon", an Apple Maps link, a Google Maps link. */
+function coords(txt) {
+  const m = String(txt).match(/(-?\d{1,3}\.\d+)[^\d-]{1,4}(-?\d{1,3}\.\d+)/);
+  if (!m) return null;
+  const a = parseFloat(m[1]), b = parseFloat(m[2]);
+  if (a < -90 || a > 90 || b < -180 || b > 180) return null;
+  return [a, b];
+}
+
+$('geo').onclick = () => {
+  if (!navigator.geolocation) return say('This browser will not share a location.', 'err');
+  $('geo').disabled = true; $('geo').textContent = 'Capturing\u2026';
+  navigator.geolocation.getCurrentPosition(p => {
+    $('gps').value = p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6);
+    $('geo').disabled = false; $('geo').textContent = 'Auto capture GPS';
+    log('GPS captured: ' + $('gps').value, 'hi');
+    buildLink();
+  }, () => {
+    $('geo').disabled = false; $('geo').textContent = 'Auto capture GPS';
+    say('Location was refused. Paste a Maps link into the GPS box instead.', 'err');
+  }, { enableHighAccuracy: true, timeout: 15000 });
+};
+
+/* ---------------- the handoff ---------------- */
+
+/* A fetch from this page to the node would be blocked as mixed content,
+   but following a link to it is ordinary navigation and is allowed. The
+   phone keeps the node reachable over WiFi while the rest of its
+   traffic goes over cellular, so this works with the page still open. */
+function buildLink() {
+  const p = new URLSearchParams();
+  const add = (k, v) => { if (v) p.set(k, v); };
+
+  add('ssid', $('ssid').value.trim());
+  add('pass', $('pass').value);
+  add('user', $('user').value.trim());
+  add('desc', $('desc').value.trim());
+  add('type', $('type').value);
+
+  const c = coords($('gps').value);
+  if (c) add('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
+
+  const ready = $('ssid').value.trim() && $('desc').value.trim();
+  const url = NODE_URL + '?' + p.toString();
+
+  const a = $('openNode');
+  a.href = ready ? url : '#';
+  a.classList.toggle('off', !ready);
+  a.textContent = ready ? 'Open the node\u2019s setup page'
+                        : 'Fill in the description and SSID first';
+  $('hlink').textContent = url;
+}
+
+['ssid', 'pass', 'user', 'desc', 'gps'].forEach(id =>
+  $(id).addEventListener('input', () => {
+    if (id === 'gps') {
+      const c = coords($('gps').value);
+      if (c && $('gps').value.length > 24)
+        $('gps').value = c[0].toFixed(6) + ',' + c[1].toFixed(6);
+    }
+    buildLink();
+  }));
+$('type').addEventListener('change', buildLink);
+
+$('showcopy').onclick = () => { $('copywrap').hidden = false; };
+$('copylink').onclick = async function () {
+  try {
+    await navigator.clipboard.writeText($('hlink').textContent);
+    this.textContent = 'Copied';
+    setTimeout(() => { this.textContent = 'Copy setup link'; }, 2000);
+  } catch (e) {
+    say('Copy did not work. Select the link and copy it by hand.', 'info');
+  }
+};
+
+/* ---------------- password visibility ---------------- */
+
+$('toggle').onclick = () => {
+  const p = $('pass');
+  const showing = p.type === 'text';
+  p.type = showing ? 'password' : 'text';
+  $('toggle').textContent = showing ? 'show' : 'hide';
+};
+
+/* ---------------- Bluetooth ---------------- */
+
+async function connect() {
+  const device = await navigator.bluetooth.requestDevice({
+    filters: [{ services: [SERVICE] }], optionalServices: [SERVICE]
+  });
+  device.addEventListener('gattserverdisconnected', () => {
+    $('link').innerHTML = 'Bluetooth link dropped &mdash; expected once the node starts joining.';
+  });
+
+  const server = await device.gatt.connect();
+  const svc = await server.getPrimaryService(SERVICE);
+  for (const [k, uuid] of Object.entries(CH)) {
+    try { chars[k] = await svc.getCharacteristic(uuid); }
+    catch (e) { chars[k] = null; }   // older firmware has no username field
+  }
+
+  if (chars.mac) mac = new TextDecoder().decode(await chars.mac.readValue());
+  if (chars.status) {
+    await chars.status.startNotifications();
+    chars.status.addEventListener('characteristicvaluechanged',
+      e => log(new TextDecoder().decode(e.target.value)));
+  }
+  if (chars.prog) {
+    await chars.prog.startNotifications();
+    chars.prog.addEventListener('characteristicvaluechanged',
+      e => log('firmware update ' + new TextDecoder().decode(e.target.value) + '%'));
+  }
+
+  $('link').innerHTML = 'Linked to <b>' + (mac || device.name || 'node') + '</b>';
+  log('connected to ' + (mac || device.name), 'hi');
+  if (!chars.user) log('this node runs older firmware: no username field', 'no');
+}
+
+async function write(key, text) {
+  if (!chars[key]) { log('skipped ' + key + ': not supported by this node', 'no'); return; }
+  await chars[key].writeValue(new TextEncoder().encode(text));
+  await new Promise(r => setTimeout(r, 140));   // let the node commit to flash
+}
+
+/* Writes into this node's record in the shared config database, using
+   the field names the record already uses so the editing tool and the
+   node both see it. The worker merges, so anything not sent here is
+   left alone. */
+async function record(method) {
+  if (!WORKER_URL || !mac) return;
+  const c = coords($('gps').value);
+  const payload = {
+    mac,
+    method,
+    description:    $('desc').value.trim(),
+    indoor_outdoor: $('type').value === '1' ? IO_INDOOR : IO_OUTDOOR,
+    wifi: {
+      ssid: $('ssid').value.trim(),
+      ...(SEND_PASSWORD ? { password: $('pass').value } : {}),
+      ...($('user').value.trim() ? { username: $('user').value.trim() } : {})
+    },
+    ...(c ? { gps: { lat: c[0], lon: c[1] } } : {})
+  };
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Write-Secret': WORKER_SECRET },
+      body: JSON.stringify(payload)
+    });
+    const out = await res.json();
+    log(res.ok ? 'recorded in ' + out.file : 'record rejected: ' + JSON.stringify(out),
+        res.ok ? 'hi' : 'no');
+  } catch (e) {
+    log('could not record: ' + e.message, 'no');
+  }
+}
+
+$('send').onclick = async () => {
+  if (!$('desc').value.trim() || !$('ssid').value.trim() || !$('pass').value) {
+    return say('Fill in the description, SSID and password first.', 'err');
+  }
+  stopScan();
+  const b = $('send'); b.disabled = true; b.textContent = 'Connecting\u2026';
+  try {
+    if (!chars.ssid) { say('Pick your node from the list your browser shows.', 'info'); await connect(); }
+    b.textContent = 'Sending\u2026';
+
+    // Type is written last: it completes the four required fields, which
+    // is what starts the connection attempt on the node.
+    await write('ssid', $('ssid').value.trim());
+    await write('pass', $('pass').value);
+    await write('user', $('user').value.trim());
+    if ($('gps').value.trim()) await write('gps', $('gps').value.trim());
+    await write('desc', $('desc').value.trim());
+    await write('type', $('type').value);
+
+    say('Config sent. The node reboots and joins \u2014 watch the log, and the LED.', 'ok');
+    record('ble');
+  } catch (err) {
+    say('Failed: ' + err.message, 'err');
+    log(err.message, 'no');
+  }
+  b.disabled = false; b.textContent = 'Connect & send';
+};
+
+buildLink();
+</script>
+</body>
+</html>
