@@ -139,8 +139,8 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 </header>
 
 <div class="route" role="group" aria-label="How to reach the node">
-  <button type="button" id="tabBle"  aria-pressed="true">Android/Windows</button>
-  <button type="button" id="tabWifi" aria-pressed="false">iOS</button>
+  <button type="button" id="tabBle"  aria-pressed="true">Bluetooth</button>
+  <button type="button" id="tabWifi" aria-pressed="false">Node's WiFi</button>
 </div>
 
 <div id="msg" class="msg"></div>
@@ -160,7 +160,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 
   <form id="f" onsubmit="return false">
     <label><span class="lbl">Description</span>
-      <input name="desc" id="desc" required placeholder="Eg: Bobo's household">
+      <input name="desc" id="desc" required placeholder="Chem building roof">
     </label>
 
     <label><span class="lbl">SSID</span>
@@ -176,7 +176,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 
     <label><span class="lbl">Username</span>
       <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <span class="hint">Only for enterprise-style networks that ask for an account name
+      <span class="hint">Only for eduroam-style networks that ask for an account name
         as well as a password. Leave blank for an ordinary WiFi network.</span>
     </label>
 
@@ -506,7 +506,18 @@ async function connect() {
   });
 
   const server = await device.gatt.connect();
-  const svc = await server.getPrimaryService(SERVICE);
+
+  /* A node that has finished provisioning tears its BLE stack down after
+     the grace window. It can still show up in the picker while the GATT
+     service itself has gone, which surfaces as NotSupportedError here. */
+  let svc;
+  try {
+    svc = await server.getPrimaryService(SERVICE);
+  } catch (e) {
+    throw new Error('That node is not accepting settings. It has already been '
+      + 'provisioned and closed its setup window. Power-cycle it and try again '
+      + 'within ten minutes, or press "Erase stored settings" on its own setup page.');
+  }
   for (const [k, uuid] of Object.entries(CH)) {
     try { chars[k] = await svc.getCharacteristic(uuid); }
     catch (e) { chars[k] = null; }   // older firmware has no username field
@@ -529,10 +540,22 @@ async function connect() {
   if (!chars.user) log('this node runs older firmware: no username field', 'no');
 }
 
+/* Returns whether the value landed. Nothing here throws: one optional
+   field the node will not take is worth a line in the log, not the loss
+   of the whole provisioning run. */
 async function write(key, text) {
-  if (!chars[key]) { log('skipped ' + key + ': not supported by this node', 'no'); return; }
-  await chars[key].writeValue(new TextEncoder().encode(text));
-  await new Promise(r => setTimeout(r, 140));   // let the node commit to flash
+  if (!chars[key]) {
+    log('skipped ' + key + ': this node\u2019s firmware has no such field', 'no');
+    return false;
+  }
+  try {
+    await chars[key].writeValue(new TextEncoder().encode(text));
+    await new Promise(r => setTimeout(r, 140));   // let the node commit to flash
+    return true;
+  } catch (e) {
+    log('could not write ' + key + ': ' + e.message, 'no');
+    return false;
+  }
 }
 
 /* Writes into this node's record in the shared config database, using
@@ -578,17 +601,32 @@ $('send').onclick = async () => {
     if (!chars.ssid) { say('Pick your node from the list your browser shows.', 'info'); await connect(); }
     b.textContent = 'Sending\u2026';
 
-    // Type is written last: it completes the four required fields, which
-    // is what starts the connection attempt on the node.
-    await write('ssid', $('ssid').value.trim());
-    await write('pass', $('pass').value);
-    await write('user', $('user').value.trim());
-    if ($('gps').value.trim()) await write('gps', $('gps').value.trim());
-    await write('desc', $('desc').value.trim());
-    await write('type', $('type').value);
+    /* Optional fields go first and are allowed to fail. An empty username
+       is only sent when the node already has one stored, since that is
+       the way to clear it — writing an empty value otherwise is what some
+       stacks reject outright. */
+    const user = $('user').value.trim();
+    if (user) await write('user', user);
+    const c = coords($('gps').value);
+    if (c) await write('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
+
+    /* The four the node needs. Type is last: it completes the set, which
+       is what starts the connection attempt. */
+    const required = [
+      ['ssid', $('ssid').value.trim()],
+      ['pass', $('pass').value],
+      ['desc', $('desc').value.trim()],
+      ['type', $('type').value],
+    ];
+    for (const [k, v] of required) {
+      if (!await write(k, v)) {
+        throw new Error('The node would not accept the ' + k + ' field, so it has '
+          + 'not been provisioned. Power-cycle it and try again.');
+      }
+    }
 
     say('Config sent. The node reboots and joins \u2014 watch the log, and the LED.', 'ok');
-    record('ble');
+    await record('ble');
   } catch (err) {
     say('Failed: ' + err.message, 'err');
     log(err.message, 'no');
