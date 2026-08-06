@@ -275,7 +275,16 @@ const CH = {
 };
 
 const $ = id => document.getElementById(id);
-let chars = {}, mac = '', stream = null, scanning = false;
+let chars = {}, mac = '', stream = null, scanning = false, device = null;
+
+/* Characteristic objects outlive the connection that produced them: they
+   stay truthy after the node drops, while every write to them fails with
+   NotSupportedError. Clearing them is what makes the next attempt
+   reconnect instead of writing into a dead link. */
+function forgetLink(why) {
+  chars = {}; mac = ''; device = null;
+  $('link').innerHTML = why;
+}
 
 function say(t, kind) { const m = $('msg'); m.textContent = t; m.className = 'msg on ' + kind; }
 
@@ -498,25 +507,32 @@ $('toggle').onclick = () => {
 /* ---------------- Bluetooth ---------------- */
 
 async function connect() {
-  const device = await navigator.bluetooth.requestDevice({
+  device = await navigator.bluetooth.requestDevice({
     filters: [{ services: [SERVICE] }], optionalServices: [SERVICE]
   });
   device.addEventListener('gattserverdisconnected', () => {
-    $('link').innerHTML = 'Bluetooth link dropped &mdash; expected once the node starts joining.';
+    forgetLink('Bluetooth link dropped &mdash; expected once the node starts joining. '
+             + 'Press Connect &amp; send again to reconnect.');
+    log('bluetooth disconnected', 'no');
   });
 
   const server = await device.gatt.connect();
 
-  /* A node that has finished provisioning tears its BLE stack down after
-     the grace window. It can still show up in the picker while the GATT
-     service itself has gone, which surfaces as NotSupportedError here. */
-  let svc;
-  try {
-    svc = await server.getPrimaryService(SERVICE);
-  } catch (e) {
-    throw new Error('That node is not accepting settings. It has already been '
-      + 'provisioned and closed its setup window. Power-cycle it and try again '
-      + 'within ten minutes, or press "Erase stored settings" on its own setup page.');
+  /* The service is not always resolvable the instant the link comes up,
+     and a node that has closed its setup window will never resolve it at
+     all. One retry separates the two. */
+  let svc = null;
+  for (let attempt = 0; attempt < 2 && !svc; attempt++) {
+    try {
+      svc = await server.getPrimaryService(SERVICE);
+    } catch (e) {
+      if (attempt === 0) { await new Promise(r => setTimeout(r, 400)); continue; }
+      forgetLink('Not connected.');
+      throw new Error('That node is not accepting settings. Either it has already '
+        + 'been provisioned and closed its setup window, or the link came up before '
+        + 'it was ready. Power-cycle it, wait for the blue blink, and try again \u2014 '
+        + 'or press "Erase stored settings" on its own setup page.');
+    }
   }
   for (const [k, uuid] of Object.entries(CH)) {
     try { chars[k] = await svc.getCharacteristic(uuid); }
@@ -630,6 +646,7 @@ $('send').onclick = async () => {
   } catch (err) {
     say('Failed: ' + err.message, 'err');
     log(err.message, 'no');
+    forgetLink('Not connected. Press Connect &amp; send to try again.');
   }
   b.disabled = false; b.textContent = 'Connect & send';
 };
