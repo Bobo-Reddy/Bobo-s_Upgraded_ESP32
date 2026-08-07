@@ -145,6 +145,16 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 
 <div id="msg" class="msg"></div>
 
+<!-- ---------- GPS relay: the node's own page sends people here ---------- -->
+<div class="card" id="paneRelay" hidden>
+  <h2>Capture this node's position</h2>
+  <p class="lede">The node's setup page cannot ask for a location, so it sent you
+    here. Nothing you already typed is lost &mdash; it is coming back with you.</p>
+  <div class="link" id="relaystate">Asking for your location&hellip;</div>
+  <a class="btnlink off" id="relayback" href="#">Back to the node</a>
+  <p class="fallbackline"><a id="relayretry">Try the location again</a></p>
+</div>
+
 <div class="card">
   <h2>Node configuration</h2>
   <p class="lede">Same details either way. Fill these in first.</p>
@@ -204,6 +214,8 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
   <p class="lede">Android, Windows, macOS, ChromeOS. Chrome or Edge.</p>
   <div class="link" id="link">Standby &middot; power the node and wait for the blue blink</div>
   <button type="button" id="send">Connect &amp; send</button>
+  <p class="fallbackline">Node showing the wrong fields?
+    <a id="forget">Forget remembered nodes</a></p>
 </div>
 
 <!-- ---------- WiFi route ---------- -->
@@ -275,6 +287,11 @@ const CH = {
 };
 
 const $ = id => document.getElementById(id);
+
+/* How many characteristics a current node exposes. Fewer than this means
+   the browser is answering from a cached attribute table that predates
+   the firmware now running, which it will not refresh on its own. */
+const EXPECTED_CHARS = 9;
 let chars = {}, mac = '', stream = null, scanning = false, device = null;
 
 /* Characteristic objects outlive the connection that produced them: they
@@ -296,9 +313,57 @@ function log(line, kind) {
   l.appendChild(d); l.scrollTop = l.scrollHeight;
 }
 
+/* ---------------- GPS relay ---------------- */
+
+/* Arriving with ?return= means the node's setup page sent us out to get a
+   location it is not allowed to ask for. Everything it was holding rides
+   along in the query string and goes straight back, so nothing typed on
+   the other side is lost. */
+const relayTo = new URLSearchParams(location.search).get('return');
+
+function relayFinish(lat, lon) {
+  const u = new URLSearchParams(location.search);
+  u.delete('return');
+  if (lat !== null) u.set('gps', lat.toFixed(6) + ',' + lon.toFixed(6));
+
+  const a = $('relayback');
+  a.href = relayTo + (relayTo.indexOf('?') < 0 ? '?' : '&') + u.toString();
+  a.classList.remove('off');
+  a.textContent = lat !== null ? 'Back to the node with these coordinates'
+                               : 'Back to the node without coordinates';
+}
+
+function relayCapture() {
+  $('relaystate').textContent = 'Asking for your location\u2026';
+  navigator.geolocation.getCurrentPosition(p => {
+    $('relaystate').innerHTML = 'Position <b>' + p.coords.latitude.toFixed(6) + ', '
+      + p.coords.longitude.toFixed(6) + '</b> \u00b1' + Math.round(p.coords.accuracy) + ' m';
+    relayFinish(p.coords.latitude, p.coords.longitude);
+  }, err => {
+    $('relaystate').textContent = 'Could not get a location: ' + err.message;
+    relayFinish(null, null);
+  }, { enableHighAccuracy: true, timeout: 20000 });
+}
+
+if (relayTo) {
+  /* Only the relay panel is any use in this mode — the node is on the
+     other side of a network this page cannot reach. */
+  $('paneBle').hidden = true;
+  $('paneWifi').hidden = true;
+  document.querySelector('.route').hidden = true;
+  document.querySelector('.card').hidden = true;      // the configuration form
+  $('paneRelay').hidden = false;
+  $('relayretry').onclick = relayCapture;
+
+  if (navigator.geolocation) relayCapture();
+  else { $('relaystate').textContent = 'This browser will not share a location.';
+         relayFinish(null, null); }
+}
+
 /* ---------------- route tabs ---------------- */
 
 function route(which) {
+  if (relayTo) return;              // relay mode owns the page
   const ble = which === 'ble';
   $('paneBle').hidden  = !ble;
   $('paneWifi').hidden = ble;
@@ -307,6 +372,33 @@ function route(which) {
 }
 $('tabBle').onclick  = () => route('ble');
 $('tabWifi').onclick = () => route('wifi');
+
+/* Revoking the permission grant forces the device picker every session.
+   It does not flush the browser's cached attribute table — nothing a page
+   can call does — but it stops a half-remembered node being reused
+   silently. */
+async function forgetRemembered(announce) {
+  if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return 0;
+  let n = 0;
+  try {
+    for (const d of await navigator.bluetooth.getDevices()) {
+      if (d.forget) { await d.forget(); n++; }
+    }
+  } catch (e) { /* not supported here; the picker will appear anyway */ }
+  if (announce) {
+    log(n ? 'forgot ' + n + ' remembered node(s)' : 'no remembered nodes to forget', 'hi');
+  }
+  return n;
+}
+forgetRemembered(false);
+
+$('forget').onclick = async () => {
+  await forgetRemembered(true);
+  forgetLink('Not connected. Press Connect &amp; send to pick the node again.');
+  say('Remembered nodes cleared. If the field count is still wrong, the browser is '
+    + 'holding a cached copy of the node\u2019s services \u2014 see the note in the log.', 'info');
+  cacheAdvice();
+};
 
 /* Web Bluetooth does not exist on iOS — no browser there has it, so the
    WiFi route is the only one that will work. Start people on it. */
@@ -405,6 +497,19 @@ function applyWifi(w) {
       ? 'Scanned ' + w.ssid + '. Enterprise network \u2014 check the username is your '
         + 'account name before sending.'
       : 'Scanned ' + w.ssid + '. Check the password came through, then send.', 'ok');
+}
+
+/* Nothing a web page can call flushes the Bluetooth attribute cache, so
+   the only honest thing to do is say where the buttons are. */
+function cacheAdvice() {
+  log('\u2014 the browser is probably caching an old copy of this node \u2014', 'no');
+  log('1. Windows Settings \u2192 Bluetooth & devices \u2192 remove ESP32-Provision', 'no');
+  log('2. chrome://settings/content/bluetoothDevices \u2192 delete this site', 'no');
+  log('3. chrome://bluetooth-internals/#devices \u2192 Forget the device', 'no');
+  log('4. restart the browser, power-cycle the node, try again', 'no');
+  say('This node is reporting fewer fields than it has. The browser is holding a '
+    + 'cached copy of its services from an older firmware build \u2014 the steps to '
+    + 'clear it are in the log below.', 'err');
 }
 
 function stopScan() {
@@ -539,9 +644,18 @@ async function connect() {
     try { chars[k] = await svc.getCharacteristic(uuid); }
     catch (e) { chars[k] = null; missing.push(k); }
   }
-  log('service found, ' + (Object.keys(CH).length - missing.length) + ' of '
-      + Object.keys(CH).length + ' fields available', 'hi');
-  if (missing.length) log('this node has no: ' + missing.join(', '), 'no');
+  const found = Object.keys(CH).length - missing.length;
+  log('service found, ' + found + ' of ' + Object.keys(CH).length
+      + ' fields available', found === EXPECTED_CHARS ? 'hi' : 'no');
+
+  if (missing.length) {
+    log('missing: ' + missing.join(', '), 'no');
+    /* A current node exposes all of them. Anything short of that is the
+       browser answering from a stale attribute table, not a node with
+       older firmware — the two look identical from here, but the cache is
+       overwhelmingly the more likely of the two. */
+    cacheAdvice();
+  }
 
   /* Reading the MAC and subscribing to the node's status are conveniences,
      not requirements. Some stacks refuse one or the other, and that must
@@ -675,6 +789,13 @@ $('send').onclick = async () => {
   }
   b.disabled = false; b.textContent = 'Connect & send';
 };
+
+/* Leaving a GATT link open across a reload is one of the ways the stack
+   ends up serving a stale view of the node. */
+window.addEventListener('beforeunload', () => {
+  try { if (device && device.gatt && device.gatt.connected) device.gatt.disconnect(); }
+  catch (e) { /* going away regardless */ }
+});
 
 buildLink();
 </script>
