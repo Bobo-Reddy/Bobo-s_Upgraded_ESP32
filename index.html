@@ -43,6 +43,10 @@ h1{font-family:var(--display);font-size:clamp(29px,7.6vw,40px);font-weight:800;
 .route button[aria-pressed="true"]{background:var(--shell2);border-color:var(--edge2);
   color:var(--chalk)}
 .route button:hover{box-shadow:none;color:var(--chalk)}
+/* The carrier picker reuses the tab styling but sits inside a field, so
+   it loses the outer margins and gains the accent when selected. */
+.route.inline{margin:0 0 7px}
+.route.inline button[aria-pressed="true"]{color:var(--b1);border-color:var(--b1)}
 
 .card{background:linear-gradient(180deg,var(--shell2),var(--shell));
   border:1px solid var(--edge);border-radius:14px;padding:22px;margin-bottom:16px;
@@ -135,7 +139,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 <header>
   <div class="eyebrow">SACAQM &middot; low-range node</div>
   <h1>Node provisioning</h1>
-  <p class="sub">Scan the network, capture the position, send it to the node.</p>
+  <p class="sub">Pick how the node reaches the server, capture the position, send it across.</p>
 </header>
 
 <div class="route" role="group" aria-label="How to reach the node">
@@ -173,22 +177,35 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
       <input name="desc" id="desc" required placeholder="Eg: Bobo's household">
     </label>
 
-    <label><span class="lbl">SSID</span>
-      <input name="ssid" id="ssid" autocapitalize="off" autocorrect="off" spellcheck="false" required>
-      <button type="button" class="ghost" id="scan">Scan WiFi QR code</button>
-      <span class="hint">Works with the QR your router prints, and with the one your
-        phone makes under <b>Share password</b>.</span>
+    <!-- The carrier. Everything below it depends on which one is picked,
+         so it comes first and is written to the node first. -->
+    <label><span class="lbl">Connection</span>
+      <div class="route inline" id="carrier" role="group" aria-label="Carrier">
+        <button type="button" id="cWifi" aria-pressed="true">WiFi</button>
+        <button type="button" id="cLte"  aria-pressed="false">LTE</button>
+        <button type="button" id="cAuto" aria-pressed="false">Both</button>
+      </div>
+      <span class="hint" id="carrierhint"></span>
     </label>
 
-    <label><span class="lbl">Password <a id="toggle">hide</a></span>
-      <input name="pass" id="pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required>
-    </label>
+    <div id="wifiFields">
+      <label><span class="lbl">SSID</span>
+        <input name="ssid" id="ssid" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+        <button type="button" class="ghost" id="scan">Scan WiFi QR code</button>
+        <span class="hint">Works with the QR your router prints, and with the one your
+          phone makes under <b>Share password</b>.</span>
+      </label>
 
-    <label><span class="lbl">Username</span>
-      <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <span class="hint">Only for enterprise-style networks that ask for an account name
-        as well as a password. Leave blank for an ordinary WiFi network.</span>
-    </label>
+      <label><span class="lbl">Password <a id="toggle">hide</a></span>
+        <input name="pass" id="pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+      </label>
+
+      <label><span class="lbl">Username</span>
+        <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <span class="hint">Only for enterprise-style networks that ask for an account name
+          as well as a password. Leave blank for an ordinary WiFi network.</span>
+      </label>
+    </div>
 
     <hr>
 
@@ -222,11 +239,13 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 <div class="card" id="paneWifi" hidden>
   <h2>Send over the node's WiFi</h2>
   <p class="lede">Any phone, including iPhone. Do the three steps in this order and
-    stay on this page throughout.</p>
+    stay on this page throughout. This is the node's own setup network, and it works
+    the same whether the node ends up on WiFi or on LTE.</p>
 
   <ol class="steps">
-    <li>Fill in everything above, including the QR scan and <b>Auto capture GPS</b>.
-      Both work here, and neither works on the node's own page.</li>
+    <li>Fill in everything above, including the connection choice, the QR scan and
+      <b>Auto capture GPS</b>. All three work here, and none of them work on the
+      node's own page.</li>
     <li>Open <b>Settings &rarr; Wi-Fi</b> and join
       <span class="ssidchip">SACAQM-Setup-XXXX</span> with the password
       <span class="ssidchip">sacaqm-setup</span>. Dismiss the sign-in sheet if one
@@ -249,7 +268,8 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
   <p class="hint" style="margin-top:14px">The node is working when the setup network
     disappears, <code>ESP32-Provision</code> stops advertising, and the LED flashes
     green for five seconds every five minutes. A steady red LED means the last upload
-    was refused.</p>
+    was refused. On LTE, give the first join up to two minutes before reading anything
+    into the light &mdash; a cold cellular attach is slow.</p>
 </div>
 
 </div>
@@ -283,16 +303,22 @@ const CH = {
   gps:    'beb5483e-36e1-4688-b7f5-ea07361b26ad',
   prog:   'beb5483e-36e1-4688-b7f5-ea07361b26ae',
   mac:    'beb5483e-36e1-4688-b7f5-ea07361b26af',
-  user:   'beb5483e-36e1-4688-b7f5-ea07361b26b0'
+  user:   'beb5483e-36e1-4688-b7f5-ea07361b26b0',
+  link:   'beb5483e-36e1-4688-b7f5-ea07361b26b1',
+  apn:    'beb5483e-36e1-4688-b7f5-ea07361b26b2'
 };
 
 const $ = id => document.getElementById(id);
 
 /* How many characteristics a current node exposes. Fewer than this means
-   the browser is answering from a cached attribute table that predates
-   the firmware now running, which it will not refresh on its own. */
-const EXPECTED_CHARS = 9;
+   either the browser is answering from a cached attribute table that
+   predates the firmware now running, or the node genuinely has older
+   firmware with no carrier fields. Both are worth saying out loud. */
+const EXPECTED_CHARS = 11;
 let chars = {}, mac = '', stream = null, scanning = false, device = null;
+
+/* wifi | lte | auto — mirrored on the node as its KEY_LINK setting. */
+let carrier = 'wifi';
 
 /* Characteristic objects outlive the connection that produced them: they
    stay truthy after the node drops, while every write to them fails with
@@ -313,12 +339,56 @@ function log(line, kind) {
   l.appendChild(d); l.scrollTop = l.scrollHeight;
 }
 
+/* ---------------- carrier ---------------- */
+
+const CARRIER_HINT = {
+  wifi: 'The node uploads over WiFi only. This is the original behaviour.',
+  lte:  'The node uploads over the COM.LTE modem only. The network fields are not '
+      + 'used and are not sent, and the Vodacom APN is built into the firmware, so '
+      + 'there is nothing else to fill in. Setup still happens over the node\u2019s '
+      + 'own WiFi or over Bluetooth, exactly as it does now.',
+  auto: 'WiFi when the node can join it, the modem when it cannot. Fill in the network '
+      + 'fields, and note that a failed WiFi join costs up to 30 s before the modem '
+      + 'is tried.'
+};
+
+/* One control, three states. Selecting LTE also drops the requirement on
+   the network fields, which would otherwise block a node that has no
+   WiFi to name.
+
+   There is deliberately no APN box. Every SIM in this fleet is Vodacom,
+   the firmware defaults to its APN, and an empty field on a bench form
+   is something to get wrong rather than something to fill in. The
+   transport for it survives on the node, in the BLE service and in the
+   config record, so a private M2M SIM later is a record edit rather than
+   a reflash. */
+function setCarrier(v) {
+  carrier = v;
+  $('cWifi').setAttribute('aria-pressed', v === 'wifi');
+  $('cLte').setAttribute('aria-pressed',  v === 'lte');
+  $('cAuto').setAttribute('aria-pressed', v === 'auto');
+
+  const wifi = v !== 'lte';
+  $('wifiFields').hidden = !wifi;
+  $('ssid').required = wifi;
+  $('pass').required = wifi;
+  $('carrierhint').textContent = CARRIER_HINT[v];
+
+  if (!wifi) stopScan();          // the scanner belongs to the WiFi fields
+  buildLink();
+}
+$('cWifi').onclick = () => setCarrier('wifi');
+$('cLte').onclick  = () => setCarrier('lte');
+$('cAuto').onclick = () => setCarrier('auto');
+
 /* ---------------- GPS relay ---------------- */
 
 /* Arriving with ?return= means the node's setup page sent us out to get a
    location it is not allowed to ask for. Everything it was holding rides
    along in the query string and goes straight back, so nothing typed on
-   the other side is lost. */
+   the other side is lost — including the carrier choice and the APN,
+   which need no special handling here because they travel as ordinary
+   parameters. */
 const relayTo = new URLSearchParams(location.search).get('return');
 
 function relayFinish(lat, lon) {
@@ -507,9 +577,10 @@ function cacheAdvice() {
   log('2. chrome://settings/content/bluetoothDevices \u2192 delete this site', 'no');
   log('3. chrome://bluetooth-internals/#devices \u2192 Forget the device', 'no');
   log('4. restart the browser, power-cycle the node, try again', 'no');
-  say('This node is reporting fewer fields than it has. The browser is holding a '
-    + 'cached copy of its services from an older firmware build \u2014 the steps to '
-    + 'clear it are in the log below.', 'err');
+  say('This node is reporting fewer fields than it has. Either the browser is holding '
+    + 'a cached copy of its services, or the node is running firmware older than '
+    + 'v1.1.0 and has no carrier fields \u2014 the steps to clear the cache are in the '
+    + 'log below.', 'err');
 }
 
 function stopScan() {
@@ -553,28 +624,35 @@ $('geo').onclick = () => {
 /* A fetch from this page to the node would be blocked as mixed content,
    but following a link to it is ordinary navigation and is allowed. The
    phone keeps the node reachable over WiFi while the rest of its
-   traffic goes over cellular, so this works with the page still open. */
+   traffic goes over cellular, so this works with the page still open.
+   The node's own page reads link= and apn= out of this query string and
+   sets its carrier toggle from them. */
 function buildLink() {
   const p = new URLSearchParams();
   const add = (k, v) => { if (v) p.set(k, v); };
 
-  add('ssid', $('ssid').value.trim());
-  add('pass', $('pass').value);
-  add('user', $('user').value.trim());
+  add('link', carrier);
+  if (carrier !== 'lte') {
+    add('ssid', $('ssid').value.trim());
+    add('pass', $('pass').value);
+    add('user', $('user').value.trim());
+  }
   add('desc', $('desc').value.trim());
   add('type', $('type').value);
 
   const c = coords($('gps').value);
   if (c) add('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
 
-  const ready = $('ssid').value.trim() && $('desc').value.trim();
+  const ready = $('desc').value.trim() &&
+                (carrier === 'lte' || $('ssid').value.trim());
   const url = NODE_URL + '?' + p.toString();
 
   const a = $('openNode');
   a.href = ready ? url : '#';
   a.classList.toggle('off', !ready);
   a.textContent = ready ? 'Open the node\u2019s setup page'
-                        : 'Fill in the description and SSID first';
+                        : (carrier === 'lte' ? 'Fill in the description first'
+                                             : 'Fill in the description and SSID first');
   $('hlink').textContent = url;
 }
 
@@ -650,10 +728,9 @@ async function connect() {
 
   if (missing.length) {
     log('missing: ' + missing.join(', '), 'no');
-    /* A current node exposes all of them. Anything short of that is the
-       browser answering from a stale attribute table, not a node with
-       older firmware — the two look identical from here, but the cache is
-       overwhelmingly the more likely of the two. */
+    /* A current node exposes all of them. Anything short of that is
+       either the browser answering from a stale attribute table or a node
+       on pre-v1.1.0 firmware; the two look identical from here. */
     cacheAdvice();
   }
 
@@ -711,20 +788,27 @@ async function write(key, text) {
 /* Writes into this node's record in the shared config database, using
    the field names the record already uses so the editing tool and the
    node both see it. The worker merges, so anything not sent here is
-   left alone. */
+   left alone.
+
+   link is an instruction to the node, the same way firmware_version is:
+   the node reads it back on its next config sync and moves carrier if it
+   differs. */
 async function record(method) {
   if (!WORKER_URL || !mac) return;
   const c = coords($('gps').value);
   const payload = {
     mac,
     method,
+    link: carrier,
+    ...(carrier !== 'lte' ? {
+      wifi: {
+        ssid: $('ssid').value.trim(),
+        ...(SEND_PASSWORD ? { password: $('pass').value } : {}),
+        ...($('user').value.trim() ? { username: $('user').value.trim() } : {})
+      }
+    } : {}),
     description:    $('desc').value.trim(),
     indoor_outdoor: $('type').value === '1' ? IO_INDOOR : IO_OUTDOOR,
-    wifi: {
-      ssid: $('ssid').value.trim(),
-      ...(SEND_PASSWORD ? { password: $('pass').value } : {}),
-      ...($('user').value.trim() ? { username: $('user').value.trim() } : {})
-    },
     ...(c ? { gps: { lat: c[0], lon: c[1] } } : {})
   };
   try {
@@ -742,9 +826,14 @@ async function record(method) {
 }
 
 $('send').onclick = async () => {
-  if (!$('desc').value.trim() || !$('ssid').value.trim() || !$('pass').value) {
-    return say('Fill in the description, SSID and password first.', 'err');
+  const needWifi = carrier !== 'lte';
+  if (!$('desc').value.trim()) {
+    return say('Fill in the description first.', 'err');
   }
+  if (needWifi && (!$('ssid').value.trim() || !$('pass').value)) {
+    return say('Fill in the SSID and password, or switch the connection to LTE.', 'err');
+  }
+
   stopScan();
   const b = $('send'); b.disabled = true; b.textContent = 'Connecting\u2026';
   try {
@@ -756,23 +845,39 @@ $('send').onclick = async () => {
     b.textContent = 'Sending\u2026';
     log('writing settings', 'hi');
 
-    /* Optional fields go first and are allowed to fail. An empty username
-       is only sent when the node already has one stored, since that is
-       the way to clear it — writing an empty value otherwise is what some
-       stacks reject outright. */
+    /* The carrier goes first. On the node it decides which fields count
+       as a complete provisioning, so writing it after the others would
+       let a WiFi-shaped set complete before the node learned it was
+       meant to be cellular. */
+    if (chars.link) {
+      await write('link', carrier);
+    } else if (carrier !== 'wifi') {
+      throw new Error('This node has no carrier field, so it is running firmware '
+        + 'older than v1.1.0 and cannot be put on LTE. Flash the current build over '
+        + 'USB first, or provision it for WiFi.');
+    }
+
+    /* Optional fields next, and allowed to fail. An empty username is
+       only sent when the node already has one stored, since that is the
+       way to clear it — writing an empty value otherwise is what some
+       stacks reject outright. No APN is written: the firmware carries the
+       Vodacom one, and a record edit is what changes it. */
     const user = $('user').value.trim();
-    if (user) await write('user', user);
+    if (needWifi && user) await write('user', user);
     const c = coords($('gps').value);
     if (c) await write('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
 
-    /* The four the node needs. Type is last: it completes the set, which
-       is what starts the connection attempt. */
-    const required = [
-      ['ssid', $('ssid').value.trim()],
-      ['pass', $('pass').value],
-      ['desc', $('desc').value.trim()],
-      ['type', $('type').value],
-    ];
+    /* The set the node needs before it will act. Type is last: it
+       completes the set, which is what starts the connection attempt.
+       On LTE there is no network to name, so the set is two fields. */
+    const required = needWifi
+      ? [['ssid', $('ssid').value.trim()],
+         ['pass', $('pass').value],
+         ['desc', $('desc').value.trim()],
+         ['type', $('type').value]]
+      : [['desc', $('desc').value.trim()],
+         ['type', $('type').value]];
+
     for (const [k, v] of required) {
       if (!await write(k, v)) {
         throw new Error('The node would not accept the ' + k + ' field, so it has '
@@ -780,7 +885,11 @@ $('send').onclick = async () => {
       }
     }
 
-    say('Config sent. The node reboots and joins \u2014 watch the log, and the LED.', 'ok');
+    say(carrier === 'lte'
+        ? 'Config sent. The node reboots and brings the modem up \u2014 a cold attach '
+          + 'takes up to two minutes. Watch the log, and the LED.'
+        : 'Config sent. The node reboots and joins \u2014 watch the log, and the LED.',
+        'ok');
     await record('ble');
   } catch (err) {
     say('Failed: ' + err.message, 'err');
@@ -797,7 +906,7 @@ window.addEventListener('beforeunload', () => {
   catch (e) { /* going away regardless */ }
 });
 
-buildLink();
+setCarrier('wifi');
 </script>
 </body>
 </html>
