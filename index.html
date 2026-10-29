@@ -63,6 +63,8 @@ label{display:block;margin:0 0 17px}
   margin-bottom:6px}
 .lbl a{color:var(--b1);text-decoration:none;letter-spacing:.08em;cursor:pointer}
 .hint{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.5}
+.chk{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--vapor);margin:-6px 0 17px}
+.chk input{width:auto;margin:0}
 input,select{width:100%;padding:12px 13px;font:inherit;font-size:16px;color:var(--chalk);
   background:#0a1215;border:1px solid var(--edge2);border-radius:9px;
   transition:border-color .18s,box-shadow .18s}
@@ -156,7 +158,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
   <p class="fallbackline"><a id="relayretry">Try the location again</a></p>
 </div>
 
-<div class="card">
+<div class="card" id="paneConfig">
   <h2>Node configuration</h2>
   <p class="lede">Same details either way. Fill these in first.</p>
 
@@ -193,6 +195,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
       <label><span class="lbl">Password <a id="toggle">hide</a></span>
         <input name="pass" id="pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required>
       </label>
+      <label class="chk"><input type="checkbox" id="open"> This network has no password</label>
 
       <label><span class="lbl">Username</span>
         <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -222,7 +225,7 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 <div class="card" id="paneBle">
   <h2>Send over Bluetooth</h2>
   <p class="lede">Android, Windows, macOS, ChromeOS. Chrome or Edge.</p>
-  <div class="link" id="link">Standby &middot; power the node and wait for the blue blink</div>
+  <div class="link" id="link">Standby &middot; power the node and give it about 40 seconds to start</div>
   <button type="button" id="send">Connect &amp; send</button>
   <p class="fallbackline">Node showing the wrong fields?
     <a id="forget">Forget remembered nodes</a></p>
@@ -257,11 +260,11 @@ code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid 
 <div class="card">
   <h2>Status &amp; logs</h2>
   <div class="log" id="log"><div class="idle">Waiting for a node.</div></div>
-  <p class="hint" style="margin-top:14px">The node is working when the setup network
-    disappears, <code>ESP32-Provision</code> stops advertising, and the LED flashes
-    green for five seconds every five minutes. A steady red LED means the last upload
-    was refused. On LTE, give the first join up to two minutes before reading anything
-    into the light &mdash; a cold cellular attach is slow.</p>
+  <p class="hint" style="margin-top:14px">The log above follows the node while it joins.
+    Once it's online, its setup network and <code>ESP32-Provision-XXXX</code> stay up for
+    ten minutes, and the node's own setup page shows whether it is online and how many
+    readings it has sent. On LTE, give the first join up to two minutes, since a cold
+    cellular attach is slow.</p>
 </div>
 
 </div>
@@ -330,7 +333,7 @@ function setCarrier(v) {
   const wifi = v !== 'lte';
   $('wifiFields').hidden = !wifi;
   $('ssid').required = wifi;
-  $('pass').required = wifi;
+  $('pass').required = wifi && !$('open').checked;
   $('carrierhint').textContent = CARRIER_HINT[v];
 
   if (!wifi) stopScan();
@@ -339,7 +342,41 @@ function setCarrier(v) {
 $('cWifi').onclick = () => setCarrier('wifi');
 $('cLte').onclick  = () => setCarrier('lte');
 
-const relayTo = new URLSearchParams(location.search).get('return');
+// Ticks or unticks "no password", which empties and locks the password box while it's ticked
+function setOpen(on) {
+  $('open').checked = on;
+  $('pass').disabled = on;
+  $('pass').required = carrier !== 'lte' && !on;
+  if (on) $('pass').value = '';
+}
+$('open').onchange = function () { setOpen(this.checked); buildLink(); };
+
+// Checks WiFi details against the limits WiFi sets and gives back a plain reason they can't
+// work, or an empty string when they look fine
+function wifiProblem(ssid, pass, user, open) {
+  const bytes = new TextEncoder().encode(ssid).length;
+  if (!ssid.trim()) return 'Fill in the SSID.';
+  if (bytes > 32) return 'That network name is ' + bytes + ' bytes long and WiFi allows 32 at most.';
+  if (user) return pass ? '' : 'A network that asks for a username needs a password too.';
+  if (open) return '';
+  if (!pass) return 'Fill in the password, or tick "This network has no password".';
+  if (pass.length < 8) return 'WiFi passwords are at least 8 characters and this one is ' + pass.length + '.';
+  if (pass.length > 64) return 'WiFi passwords are at most 63 characters and this one is ' + pass.length + '.';
+  if (pass.length === 64 && !/^[0-9a-fA-F]+$/.test(pass))
+    return 'A 64-character WiFi password has to be a hex key (only 0-9 and a-f).';
+  return '';
+}
+
+// Only the node's own setup page may be the place this page sends a captured position back to
+let relayTo = null;
+(function () {
+  const raw = new URLSearchParams(location.search).get('return');
+  if (!raw) return;
+  try {
+    const u = new URL(raw);
+    if (u.protocol === 'http:' && u.hostname === '192.168.4.1') relayTo = u.origin + u.pathname;
+  } catch (e) { }
+})();
 
 function relayFinish(lat, lon) {
   const u = new URLSearchParams(location.search);
@@ -369,7 +406,7 @@ if (relayTo) {
   $('paneBle').hidden = true;
   $('paneWifi').hidden = true;
   document.querySelector('.route').hidden = true;
-  document.querySelector('.card').hidden = true;
+  $('paneConfig').hidden = true;
   $('paneRelay').hidden = false;
   $('relayretry').onclick = relayCapture;
 
@@ -424,15 +461,26 @@ if (!navigator.bluetooth) {
 function parseWifiQr(text) {
   if (!/^WIFI:/i.test(text)) return null;
   const out = {};
-  let key = '', val = '', esc = false, onKey = true;
-  const flush = () => { if (key) out[key.toUpperCase()] = val; key = ''; val = ''; onKey = true; };
+  // openQ and closeQ note whether the value started and ended with a quote that wasn't
+  // escaped, since some generators wrap the name and password in quotes
+  let key = '', val = '', esc = false, onKey = true, openQ = false, closeQ = false;
+  const flush = () => {
+    if (key) {
+      if (openQ && closeQ && val.length >= 2) val = val.slice(1, -1);
+      out[key.toUpperCase()] = val;
+    }
+    key = ''; val = ''; onKey = true; openQ = false; closeQ = false;
+  };
 
   for (const ch of text.slice(5)) {
-    if (esc) { val += ch; esc = false; continue; }
+    if (esc) { val += ch; esc = false; closeQ = false; continue; }
     if (ch === '\\') { esc = true; continue; }
     if (ch === ':' && onKey) { onKey = false; continue; }
     if (ch === ';') { flush(); continue; }
-    if (onKey) key += ch; else val += ch;
+    if (onKey) { key += ch; continue; }
+    if (!val.length && ch === '"') openQ = true;
+    val += ch;
+    closeQ = (ch === '"');
   }
   flush();
 
@@ -441,6 +489,7 @@ function parseWifiQr(text) {
     ssid: out.S,
     pass: out.P || '',
     user: out.I || '',
+    open: /^nopass$/i.test(out.T || '') || (!out.T && !out.P),
     enterprise: /EAP/i.test(out.T || '') || !!out.I
   };
 }
@@ -492,14 +541,16 @@ async function startScan() {
 
 function applyWifi(w) {
   $('ssid').value = w.ssid;
+  setOpen(w.open);
   if (w.pass) $('pass').value = w.pass;
   if (w.user) $('user').value = w.user;
   stopScan();
   buildLink();
-  log('scanned network ' + w.ssid + (w.enterprise ? ' (enterprise)' : ''), 'hi');
+  log('scanned network ' + w.ssid + (w.enterprise ? ' (enterprise)' : w.open ? ' (no password)' : ''), 'hi');
   say(w.enterprise
       ? 'Scanned ' + w.ssid + '. Enterprise network \u2014 check the username is your '
         + 'account name before sending.'
+      : w.open ? 'Scanned ' + w.ssid + '. It has no password, so you can send straight away.'
       : 'Scanned ' + w.ssid + '. Check the password came through, then send.', 'ok');
 }
 
@@ -551,10 +602,13 @@ function buildLink() {
   const p = new URLSearchParams();
   const add = (k, v) => { if (v) p.set(k, v); };
 
+  // The SSID goes across exactly as typed, since spaces at either end are part of the name
+  const open = $('open').checked;
   add('link', carrier);
   if (carrier !== 'lte') {
-    add('ssid', $('ssid').value.trim());
-    add('pass', $('pass').value);
+    add('ssid', $('ssid').value);
+    if (open) add('open', '1');
+    else      add('pass', $('pass').value);
     add('user', $('user').value.trim());
   }
   add('desc', $('desc').value.trim());
@@ -563,16 +617,16 @@ function buildLink() {
   const c = coords($('gps').value);
   if (c) add('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
 
-  const ready = $('desc').value.trim() &&
-                (carrier === 'lte' || $('ssid').value.trim());
+  const problem = carrier === 'lte' ? ''
+    : wifiProblem($('ssid').value, $('pass').value, $('user').value.trim(), open);
+  const ready = $('desc').value.trim() && !problem;
   const url = NODE_URL + '?' + p.toString();
 
   const a = $('openNode');
   a.href = ready ? url : '#';
   a.classList.toggle('off', !ready);
   a.textContent = ready ? 'Open the node\u2019s setup page'
-                        : (carrier === 'lte' ? 'Fill in the description first'
-                                             : 'Fill in the description and SSID first');
+                        : (!$('desc').value.trim() ? 'Fill in the description first' : problem);
   $('hlink').textContent = url;
 }
 
@@ -626,7 +680,7 @@ async function connect() {
       forgetLink('Not connected.');
       throw new Error('That node is not accepting settings. Either it has already '
         + 'been provisioned and closed its setup window, or the link came up before '
-        + 'it was ready. Power-cycle it, wait for the blue blink, and try again \u2014 '
+        + 'it was ready. Power-cycle it, give it about 40 seconds, and try again \u2014 '
         + 'or press "Erase stored settings" on its own setup page.');
     }
   }
@@ -698,7 +752,7 @@ async function record(method) {
     link: carrier,
     ...(carrier !== 'lte' ? {
       wifi: {
-        ssid: $('ssid').value.trim(),
+        ssid: $('ssid').value,
         ...(SEND_PASSWORD ? { password: $('pass').value } : {}),
         ...($('user').value.trim() ? { username: $('user').value.trim() } : {})
       }
@@ -726,8 +780,10 @@ $('send').onclick = async () => {
   if (!$('desc').value.trim()) {
     return say('Fill in the description first.', 'err');
   }
-  if (needWifi && (!$('ssid').value.trim() || !$('pass').value)) {
-    return say('Fill in the SSID and password, or switch the connection to LTE.', 'err');
+  const open = $('open').checked;
+  if (needWifi) {
+    const problem = wifiProblem($('ssid').value, $('pass').value, $('user').value.trim(), open);
+    if (problem) return say(problem, 'err');
   }
 
   stopScan();
@@ -749,14 +805,17 @@ $('send').onclick = async () => {
         + 'USB first, or provision it for WiFi.');
     }
 
+    // A single zero byte reaches the node as an empty value. That's how a blank username
+    // clears an old one, and how "no password" is sent for an open network
+    const NONE = '\0';
     const user = $('user').value.trim();
-    if (needWifi && user) await write('user', user);
+    if (needWifi) await write('user', user || NONE);
     const c = coords($('gps').value);
     if (c) await write('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
 
     const required = needWifi
-      ? [['ssid', $('ssid').value.trim()],
-         ['pass', $('pass').value],
+      ? [['ssid', $('ssid').value],
+         ['pass', open ? NONE : $('pass').value],
          ['desc', $('desc').value.trim()],
          ['type', $('type').value]]
       : [['desc', $('desc').value.trim()],
@@ -771,8 +830,8 @@ $('send').onclick = async () => {
 
     say(carrier === 'lte'
         ? 'Config sent. The node reboots and brings the modem up \u2014 a cold attach '
-          + 'takes up to two minutes. Watch the log, and the LED.'
-        : 'Config sent. The node reboots and joins \u2014 watch the log, and the LED.',
+          + 'takes up to two minutes. Watch the log.'
+        : 'Config sent. The node reboots and joins \u2014 watch the log.',
         'ok');
     await record('ble');
   } catch (err) {
