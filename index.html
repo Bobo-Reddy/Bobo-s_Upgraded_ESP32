@@ -364,6 +364,7 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
       land in the node's diagnostics file in the repo.</p>
     <button type="button" id="surveyGo" disabled>Start band survey</button>
     <div class="link" id="surveyStatus" style="margin-top:12px">&nbsp;</div>
+    <button type="button" class="ghost" id="useSuggest" hidden>Use the suggested bands</button>
 
     <hr>
     <h3>Deployment note</h3>
@@ -1153,14 +1154,22 @@ function devRender(fillForm) {
     $('devNote').value = r.dev_note || '';
   }
 
-  // Survey
+  // Survey, with the bands the node suggests locking to
   let svTxt = 'No survey requested.';
+  const done = l.survey_id && l.survey_id_done === l.survey_id;
+  const sugg = done ? String(l.survey_suggest || '').split(',').map(Number).filter(Boolean) : [];
   if (l.survey_id) {
-    svTxt = l.survey_id_done === l.survey_id
+    svTxt = done
       ? '<b>Finished.</b> Results are in the <a href="' + diag + '" target="_blank" rel="noopener">diagnostics file</a> under "survey".'
+        + (sugg.length
+            ? '<br>Suggested lock: <b>' + sugg.map(b => 'B' + b).join(' and ') + '</b>, the best signal'
+              + (sugg.length > 1 ? 's' : '') + ' that passed data. Lock only if the node has trouble on automatic.'
+            : '<br>No band passed data, so a lock won\u2019t help here.')
       : 'Requested. Waiting for the node to run it.';
   }
   $('surveyStatus').innerHTML = svTxt;
+  $('useSuggest').hidden = !sugg.length;
+  $('useSuggest').dataset.bands = sugg.join(',');
 
   devButtons();
   devWatch();
@@ -1303,6 +1312,15 @@ $('surveyGo').onclick = async () => {
     say('The survey request wasn’t saved: ' + e.message, 'err');
   }
   devButtons();
+};
+
+// Ticks the suggested bands in the band lock section. Nothing is sent until Apply
+$('useSuggest').onclick = () => {
+  const want = ($('useSuggest').dataset.bands || '').split(',').map(Number);
+  setLockMode('lock');
+  document.querySelectorAll('#bandGrid input').forEach(cb => { cb.checked = want.includes(Number(cb.value)); });
+  $('lockMode').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  say('Suggested bands ticked. Read the notes, tick the box and press Apply to send the lock.', 'info');
 };
 
 $('noteSave').onclick = async () => {
