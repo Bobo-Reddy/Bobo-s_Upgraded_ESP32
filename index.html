@@ -1011,7 +1011,7 @@ const LOCK_BANDS = [
   { b: 41, f: '2600 MHz TDD', ops: 'Vodacom, MTN, Rain' }
 ];
 
-let devPw = '', devMac = '', devRec = null, devPoll = 0, altSource = '';
+let devPw = '', devMac = '', devRec = null, devDiag = null, devPoll = 0, altSource = '';
 let lockMode = 'auto';
 
 function ssGet(k)    { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
@@ -1112,6 +1112,11 @@ async function devRefresh(loud) {
     const j = await res.json();
     devRec = j.found ? j.config : null;
     if (loud) log(j.found ? 'loaded record for ' + devMac : 'no record yet for ' + devMac, j.found ? 'hi' : 'no');
+    // The node's diagnostics file says when it last read its settings and how that went
+    try {
+      const d = await (await fetch(WORKER_URL + '?kind=diag&mac=' + devMac.replace(/:/g, '-'), { cache: 'no-store' })).json();
+      devDiag = d.found ? d.config : null;
+    } catch (e) { devDiag = null; }
   } catch (e) {
     if (loud) say('Couldn’t load that node: ' + e.message, 'err');
     return;
@@ -1129,6 +1134,7 @@ function devRender(fillForm) {
       + '<br>Firmware ' + esc(p.running_fw || r.firmware_version || '?')
       + ' &middot; ' + esc(r.link || p.carrier || '?')
       + ' &middot; last report ' + esc(p.last_provisioned || 'never')
+      + '<br>' + readText()
       + '<br><a href="' + diag + '" target="_blank" rel="noopener">Diagnostics file in the repo</a>'
     : 'No record for ' + esc(devMac) + ' yet. Settings sent now are kept for when it first reports.';
 
@@ -1195,6 +1201,16 @@ function devRender(fillForm) {
 
   devButtons();
   devWatch();
+}
+
+// "Last read its settings" line, from the node's latest diagnostics
+function readText() {
+  const c = devDiag && devDiag.config_read;
+  if (!c) return 'Last read its settings: not reported yet (needs the latest firmware).';
+  const when = c.at ? new Date(c.at * 1000).toLocaleString() : 'time unknown';
+  const sent = devDiag.received_at ? ', reported ' + new Date(devDiag.received_at).toLocaleTimeString() : '';
+  return 'Last read its settings: ' + esc(when) + ', '
+    + (c.ok ? '<b>OK</b>' : '<b>failed</b> (HTTP ' + esc(c.http) + '), retrying next cycle') + esc(sent);
 }
 
 function bandsText(bands, rat) {
@@ -1387,13 +1403,9 @@ $('mgVis').addEventListener('change', mongoBuild);
 
 // The node's diagnostics file is updated at least hourly while it's online, so its time is a
 // better "last seen" than the record's last change
-async function mongoLastSeen() {
-  try {
-    const res = await fetch(WORKER_URL + '?kind=diag&mac=' + devMac.replace(/:/g, '-'), { cache: 'no-store' });
-    const j = await res.json();
-    const t = j.found ? Date.parse(j.config.received_at || '') : NaN;
-    if (!isNaN(t) && (isNaN(lastSeenMs) || t > lastSeenMs)) { lastSeenMs = t; mongoBuild(); }
-  } catch (e) { }
+function mongoLastSeen() {
+  const t = devDiag ? Date.parse(devDiag.received_at || '') : NaN;
+  if (!isNaN(t) && (isNaN(lastSeenMs) || t > lastSeenMs)) { lastSeenMs = t; mongoBuild(); }
 }
 
 // Fills province and city from the node's GPS. They stay editable either way
