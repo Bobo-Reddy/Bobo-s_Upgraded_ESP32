@@ -1314,8 +1314,14 @@ function healthText(r) {
   if (s.last_upload_at) parts.push('last reading ' + esc(new Date(s.last_upload_at * 1000).toLocaleString()));
   parts.push(esc(s.uploads_ok) + ' readings since boot');
   parts.push(s.fail_streak ? '<b>' + esc(s.fail_streak) + ' failed tries in a row</b>' : 'no failed tries');
-  if (s.recoveries) parts.push('<b>' + esc(s.recoveries) + ' recovery restart(s) in a row</b>');
+  if (s.recoveries) parts.push('<b>' + esc(s.recoveries) + ' recovery restart(s) before this boot</b>');
   parts.push('last reset: ' + esc(s.reset_reason));
+  const bt = s.boot || {};
+  if (bt.sensor) parts.push('SEN66 at boot: ' + esc(bt.sensor));
+  if (bt.voc) parts.push('VOC learning: ' + esc(bt.voc));
+  const g = s.gaps;
+  if (g && g.count) parts.push('gaps between readings ' + esc(g.min_s) + ' to ' + esc(g.max_s)
+    + ' s over ' + esc(g.count));
   const sn = s.sensor || {};
   if (sn.present === false) parts.push('<b>SEN66 not found</b>');
   else if (sn.problems) parts.push('<b>SEN66: ' + esc(sn.problems) + '</b>');
@@ -1324,6 +1330,9 @@ function healthText(r) {
   const rec = r.last_recovery;
   if (rec && rec.reason) parts.push('last recovery restart: ' + esc(rec.reason)
     + (rec.at ? ' at ' + esc(new Date(rec.at * 1000).toLocaleString()) : ''));
+  const ota = r.last_ota;
+  if (ota && ota.result) parts.push('last update: ' + esc(ota.version) + ' ' + esc(ota.result)
+    + (ota.detail ? ' (' + esc(ota.detail) + ')' : ''));
   return 'Health: ' + parts.join(' &middot; ');
 }
 
