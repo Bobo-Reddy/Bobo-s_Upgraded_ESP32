@@ -18,6 +18,7 @@
   --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;background:var(--void);color:var(--chalk);
   font-family:var(--sans);font-size:16px;line-height:1.55;padding-bottom:64px;
@@ -28,8 +29,7 @@ body{margin:0;min-height:100vh;background:var(--void);color:var(--chalk);
 .wrap{max-width:600px;margin:0 auto;padding:0 20px}
 
 header{padding:42px 0 8px}
-.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--dim)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--dim)}
 h1{font-family:var(--display);font-size:clamp(29px,7.6vw,40px);font-weight:800;
   line-height:1.03;letter-spacing:-.01em;margin:12px 0 10px;
   background:linear-gradient(96deg,var(--chalk) 32%,var(--b1));
@@ -130,7 +130,7 @@ ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:24px
 .log div.no{border-left-color:var(--b4);color:var(--b4)}
 .log .idle{border:0;padding-left:0;color:var(--dim)}
 code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid var(--edge2);
-  padding:2px 6px;border-radius:5px;color:var(--b1)}
+  padding:2px 6px;border-radius:5px;color:var(--b1);overflow-wrap:anywhere}
 .card h3{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
   color:var(--b1);font-weight:500;margin:0 0 10px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
@@ -153,138 +153,163 @@ textarea{width:100%;min-height:84px;padding:12px 13px;font:inherit;font-size:15p
 textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,224,180,.15)}
 .link a{color:var(--b1)}
 .row2{display:flex;gap:10px}.row2>label{flex:1;min-width:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.done{position:fixed;inset:0;display:none;place-items:center;padding:20px;z-index:50;
+  background:rgba(7,12,14,.86)}
+.done.on{display:grid}
+.done .box{max-width:400px;width:100%;text-align:center;padding:30px 24px 24px;
+  background:linear-gradient(180deg,var(--shell2),var(--shell));border:1px solid var(--edge2);
+  border-radius:16px;box-shadow:0 30px 70px -30px #000;animation:pop .35s ease-out}
+.done h2{font-family:var(--display);font-size:22px;margin:14px 0 8px}
+.done p{color:var(--vapor);font-size:15px;margin:0 0 10px}
+.done .nodeid{font-family:var(--mono);font-size:13px;color:var(--chalk);margin:4px 0 18px}
+.tick{width:104px;height:104px;display:block;margin:0 auto}
+.tick circle{fill:none;stroke:var(--b1);stroke-width:4;stroke-dasharray:290;stroke-dashoffset:290;
+  animation:draw .7s ease-out forwards}
+.tick path{fill:none;stroke:var(--b1);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:70;stroke-dashoffset:70;animation:draw .45s .6s ease-out forwards}
+.prog-top{margin:0 0 16px}
+#progLabel{font-size:15px;font-weight:600;color:var(--chalk)}
+.prog.fail #progLabel{color:var(--b4)}
+.prog.ok #progLabel{color:var(--b1)}
+.stepper{position:relative}
+.track{position:absolute;left:12.5%;right:12.5%;top:17px;height:2px;background:var(--edge2);border-radius:2px}
+.fill{height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,#14b8a6,#22c55e);
+  transition:width .5s ease}
+.prog.fail .fill{background:var(--b4)}
+.stages{position:relative;display:flex;justify-content:space-between;margin:0;padding:0;list-style:none}
+.stages li{flex:1;min-width:0;padding:0 2px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}
+.dot{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--sans);font-size:15px;font-weight:600;color:var(--vapor);
+  background:#1b282d;border:1px solid var(--edge2);transition:background .3s,color .3s,box-shadow .3s}
+.name{font-size:12px;line-height:1.3;color:var(--dim)}
+.stages li.now .dot,.stages li.did .dot{color:#fff;border-color:transparent;
+  background:linear-gradient(135deg,#14b8a6,#22c55e)}
+.stages li.now .name{color:var(--chalk)}
+.stages li.did .name{color:var(--b1)}
+.prog.busy .stages li.now .dot{animation:pulse 1.4s ease-out infinite}
+.stages li.bad .dot{color:#fff;border-color:transparent;background:var(--b4)}
+.stages li.bad .name{color:var(--b4)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 10px rgba(34,197,94,0)}}
+details.logwrap{margin-top:16px}
+details.logwrap summary{cursor:pointer;font-size:13px;color:var(--vapor);margin-bottom:8px}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}
+  .done .box,.tick circle,.tick path,.prog.busy .stages li.now .dot{animation:none;stroke-dashoffset:0}}
 </style>
 </head>
 <body><div class="wrap">
 
 <header>
-  <div class="eyebrow">SACAQM &middot; mid-range node</div>
-  <h1>Node provisioning</h1>
-  <p class="sub">Pick how the node reaches the server, capture the position, send it across.</p>
+  <div class="eyebrow">SACAQM &middot; AIrSynq</div>
+  <h1>Node Provisioning</h1>
 </header>
 
 <div class="route" role="group" aria-label="How to reach the node">
   <button type="button" id="tabBle"  aria-pressed="true">Android/Windows</button>
-  <button type="button" id="tabWifi" aria-pressed="false">iOS</button>
+  <button type="button" id="tabWifi" aria-pressed="false">iOS/Mac</button>
   <button type="button" id="tabDev"  aria-pressed="false">Developer</button>
 </div>
 
 <div id="msg" class="msg"></div>
 
 <div class="card" id="paneRelay" hidden>
-  <h2>Capture this node's position</h2>
-  <p class="lede">The node's setup page cannot ask for a location, so it sent you
-    here. Nothing you already typed is lost &mdash; it is coming back with you.</p>
-  <div class="link" id="relaystate">Asking for your location&hellip;</div>
+  <h2>Add the node's location</h2>
+  <div class="link" id="relaystate">Getting your location&hellip;</div>
   <a class="btnlink off" id="relayback" href="#">Back to the node</a>
-  <p class="fallbackline"><a id="relayretry">Try the location again</a></p>
+  <p class="fallbackline"><a id="relayretry">Try again</a></p>
 </div>
 
 <div class="card" id="paneConfig">
-  <h2>Node configuration</h2>
-  <p class="lede">Same details either way. Fill these in first.</p>
+  <h2>Node details</h2>
 
   <div id="scanner" hidden>
     <video id="cam" playsinline muted></video>
     <div id="reticle"></div>
     <div class="scanbar">
-      <span id="scanmsg">Point at the WiFi QR code</span>
+      <span id="scanmsg">Point the camera at the WiFi QR code</span>
       <button type="button" id="scanstop">Stop</button>
     </div>
   </div>
 
   <form id="f" onsubmit="return false">
-    <label><span class="lbl">Description</span>
-      <input name="desc" id="desc" required placeholder="Eg: Bobo's household">
+    <label><span class="lbl">Node name</span>
+      <input name="desc" id="desc" required>
     </label>
 
-    <label><span class="lbl">Connection</span>
+    <label><span class="lbl">How it connects to the internet</span>
       <div class="route inline" id="carrier" role="group" aria-label="Carrier">
         <button type="button" id="cWifi" aria-pressed="true">WiFi</button>
         <button type="button" id="cLte"  aria-pressed="false">LTE</button>
       </div>
-      <span class="hint" id="carrierhint"></span>
     </label>
 
     <div id="wifiFields">
-      <label><span class="lbl">SSID</span>
+      <label><span class="lbl">WiFi network name</span>
         <input name="ssid" id="ssid" autocapitalize="off" autocorrect="off" spellcheck="false" required>
-        <button type="button" class="ghost" id="scan">Scan WiFi QR code</button>
-        <span class="hint">Works with the QR your router prints, and with the one your
-          phone makes under <b>Share password</b>.</span>
+        <button type="button" class="ghost" id="scan">Scan the WiFi QR code</button>
       </label>
 
-      <label><span class="lbl">Password <a id="toggle">hide</a></span>
+      <label><span class="lbl">WiFi password <a id="toggle">hide</a></span>
         <input name="pass" id="pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" required>
       </label>
       <label class="chk"><input type="checkbox" id="open"> This network has no password</label>
 
-      <label><span class="lbl">Username</span>
+      <label><span class="lbl">Username (most networks don't need one)</span>
         <input name="user" id="user" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <span class="hint">Only for enterprise-style networks that ask for an account name
-          as well as a password. Leave blank for an ordinary WiFi network.</span>
       </label>
     </div>
 
     <hr>
 
-    <label><span class="lbl">Type</span>
+    <label><span class="lbl">Where is the node?</span>
       <select name="type" id="type">
         <option value="2">Outdoor</option>
         <option value="1">Indoor</option>
       </select>
     </label>
 
-    <label style="margin-bottom:0"><span class="lbl">GPS</span>
+    <label style="margin-bottom:0"><span class="lbl">Location</span>
       <input name="gps" id="gps" inputmode="decimal" placeholder="-26.190000,28.030000">
-      <button type="button" class="ghost" id="geo">Auto capture GPS</button>
-      <span class="hint">Or paste a Maps share link &mdash; the coordinates get pulled
-        out of it.</span>
+      <button type="button" class="ghost" id="geo">Use my current location</button>
     </label>
   </form>
 </div>
 
 <div class="card" id="paneBle">
   <h2>Send over Bluetooth</h2>
-  <p class="lede">Android, Windows, macOS, ChromeOS. Chrome or Edge.</p>
-  <div class="link" id="link">Standby &middot; power the node and give it about 40 seconds to start</div>
+  <div class="link" id="link">Switch the node on and wait about 40 seconds, then press the button.</div>
   <button type="button" id="send">Connect &amp; send</button>
-  <p class="fallbackline">Node showing the wrong fields?
-    <a id="forget">Forget remembered nodes</a></p>
+  <p class="fallbackline">Can't find the node, or something looks wrong?
+    <a id="forget">Clear saved nodes</a></p>
 </div>
 
 <div class="card" id="paneWifi" hidden>
   <h2>Send over the node's WiFi</h2>
-  <p class="lede">Any phone, including iPhone. Do the three steps in this order and
-    stay on this page throughout. This is the node's own setup network, and it works
-    the same whether the node ends up on WiFi or on LTE.</p>
+  <p class="lede">For iPhone, iPad and Mac, or any phone where Bluetooth doesn't work.
+    Do these three steps in order.</p>
 
   <ol class="steps">
-    <li>Fill in everything above, including the connection choice, the QR scan and
-      <b>Auto capture GPS</b>. All three work here, and none of them work on the
-      node's own page.</li>
+    <li>Fill in all the details above, including <b>Use my current location</b>. That
+      button only works on this page, not on the node's page.</li>
     <li>Open <b>Settings &rarr; Wi-Fi</b> and join
-      <span class="ssidchip">SACAQM-Setup-XXXX</span> with the password
-      <span class="ssidchip">sacaqm-setup</span>. Dismiss the sign-in sheet if one
-      pops up, and come back here.</li>
-    <li>Tap the button. The node's page opens with everything already filled in
-      &mdash; check it and press <b>Save and connect</b>.</li>
+      <span class="ssidchip">SACAQM-Setup-XXXX</span>. The password is
+      <span class="ssidchip">sacaqm-setup</span>. If a sign-in screen pops up, close it
+      and come back to this page.</li>
+    <li>Tap the button below. The node's page opens with your details filled in. Check
+      them and press <b>Save and connect</b>.</li>
   </ol>
 
   <a class="btnlink off" id="openNode" href="#" rel="noopener">Open the node's setup page</a>
   <p class="fallbackline">Button not working? <a id="showcopy">Copy the link instead</a></p>
   <div id="copywrap" hidden style="margin-top:12px">
     <div class="link" id="hlink" style="color:var(--b1)"></div>
-    <button type="button" class="ghost" id="copylink">Copy setup link</button>
+    <button type="button" class="ghost" id="copylink">Copy link</button>
   </div>
 </div>
 
 <div class="card" id="paneDev" hidden>
   <h2>Developer</h2>
-  <p class="lede">Settings for a node that's already deployed. They go to the node's record, and
-    the node picks them up at its next config sync (within about 16 minutes) or its next
-    reboot.</p>
 
   <div id="devLocked">
     <label><span class="lbl">Developer password</span>
@@ -294,40 +319,29 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
   </div>
 
   <div id="devOpen" hidden>
-    <label><span class="lbl">Node MAC <a id="devRelock">lock tab</a></span>
+    <label><span class="lbl">Node ID (MAC address) <a id="devRelock">lock</a></span>
       <input id="devmac" placeholder="AA:BB:CC:DD:EE:FF" autocapitalize="characters"
         autocorrect="off" spellcheck="false">
       <button type="button" class="ghost" id="devLoad">Load node</button>
     </label>
-    <div class="link" id="devNode">No node loaded.</div>
+    <div class="link" id="devNode">No node loaded yet.</div>
 
     <hr>
     <h3>Altitude</h3>
-    <p class="hint" style="margin:-4px 0 14px">The SEN66 uses this to correct its CO&#8322;
-      reading for air pressure. Nothing else it measures uses it. Ground height from a terrain
-      map is accurate enough: 10 m out changes the correction by about 0.1%.</p>
     <div class="btnrow">
-      <button type="button" class="ghost" id="altNode" disabled>Use the node's stored position</button>
+      <button type="button" class="ghost" id="altNode" disabled>Use the node's saved location</button>
       <button type="button" class="ghost" id="altHere" disabled>Use my location</button>
     </div>
-    <div class="link" id="altSrc">Load a node, then pick where the position comes from.</div>
-    <label><span class="lbl">Altitude to send (metres above sea level)</span>
+    <div class="link" id="altSrc">Load a node, then choose where to get the location from.</div>
+    <label><span class="lbl">Height above sea level (metres)</span>
       <input id="altM" type="number" inputmode="numeric" min="-50" max="3000" step="1">
-      <span class="hint">Add the mounting height yourself if the node is high up on a
-        building. Values from &minus;50 to 3000 m are accepted; below zero counts as sea
-        level.</span>
     </label>
-    <label class="chk"><input type="checkbox" id="altOk"> I've checked this altitude for the site</label>
-    <button type="button" id="altSend" disabled>Send altitude to the node</button>
+    <label class="chk"><input type="checkbox" id="altOk"> I've checked this height is right for the site</label>
+    <button type="button" id="altSend" disabled>Send altitude</button>
     <div class="link" id="altStatus" style="margin-top:12px">&nbsp;</div>
 
     <hr>
     <h3>CO&#8322; self-calibration</h3>
-    <p class="hint" style="margin:-4px 0 14px">With self-calibration (ASC) on, the SEN66 treats
-      the lowest CO&#8322; it sees over about a week as fresh outdoor air (around 400 ppm) and
-      shifts its baseline to match. Leave it on for nodes that regularly get outdoor air. Turn it
-      off for nodes that never do, like a closed room or a sealed enclosure, because there it
-      drags readings down over time.</p>
     <div class="btnrow">
       <button type="button" class="ghost" id="ascOff" disabled style="flex:1">Turn ASC off</button>
       <button type="button" class="ghost" id="ascOn" disabled style="flex:1">Turn ASC on</button>
@@ -335,54 +349,43 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
     <div class="link" id="ascStatus">&nbsp;</div>
 
     <hr>
-    <h3>Firmware update</h3>
-    <p class="hint" style="margin:-4px 0 14px">Publish the build to the firmware repo first, under
-      <code>firmware/portal/outdoor/&lt;version&gt;/OutdoorNodeCode.bin</code> (or <code>indoor/</code>
-      and <code>IndoorNodeCode.bin</code> for an indoor node). Check the build here: the page downloads
-      it and works out its exact size and MD5, and the worker checks it's where the node will look.
-      The node installs it at its next config sync, checks the MD5 before switching to it, and goes
-      back to its old firmware by itself if the new one keeps crashing.</p>
+    <h3>Software update</h3>
     <label><span class="lbl">Version to install</span>
       <input id="fwVer" placeholder="v1.3.3" autocapitalize="off" autocorrect="off" spellcheck="false">
     </label>
-    <label class="chk"><input type="checkbox" id="fwDown"> Allow an older version than the node runs</label>
+    <label class="chk"><input type="checkbox" id="fwDown"> Allow going back to an older version</label>
     <button type="button" class="ghost" id="fwCheck" disabled>Check the build</button>
     <div class="link" id="fwInfo" style="margin-top:12px">&nbsp;</div>
     <button type="button" id="fwSend" disabled>Send update to the node</button>
     <div class="link" id="fwStatus" style="margin-top:12px">&nbsp;</div>
 
     <hr>
-    <h3>Reading interval</h3>
-    <p class="hint" style="margin:-4px 0 14px">How often the node takes and sends a reading. The
-      default is 320 s. The node never sends two readings less than 305 s apart, so a shorter
-      interval only makes it retry sooner.</p>
+    <h3>How often it sends a reading</h3>
     <label><span class="lbl">Seconds between readings (90 to 3600)</span>
       <input id="rateS" type="number" inputmode="numeric" min="90" max="3600" step="1">
     </label>
-    <button type="button" class="ghost" id="rateSend" disabled>Send interval</button>
+    <button type="button" class="ghost" id="rateSend" disabled>Send</button>
     <div class="link" id="rateStatus" style="margin-top:12px">&nbsp;</div>
 
     <hr>
-    <h3>LTE band lock</h3>
+    <h3>Mobile network bands</h3>
     <details class="notes">
-      <summary>Notes: read these before locking</summary>
-      <p>Normally the modem picks the band and cell itself. A lock limits it to the bands you
-        tick here.</p>
+      <summary>Read this before locking</summary>
+      <p>Normally the node's modem chooses the mobile band by itself. Locking makes it use only
+        the bands you tick.</p>
       <ul>
-        <li>A lock helps when one band at a site is bad and another is good. Run a band survey
-          first: its results show which bands register and pass data at that spot.</li>
-        <li>A lock doesn't help when every band is bad, for example from interference across
-          the spectrum, a shielded spot or an operator outage.</li>
-        <li>If a locked band disappears, the node has no service on it. The node takes the lock
-          off by itself after two failed attaches, or when it restarts after 15 minutes without
-          an upload, and then stays on automatic until you press Apply again.</li>
-        <li>The modem keeps the setting in its own memory. The firmware puts the modem's own
-          default back on Restore automatic, on an automatic revert, and on a full erase.</li>
-        <li>LTE only stops the modem falling back to 3G or 2G when LTE gets weak.</li>
-        <li>A node only reads its record while it's online. At a site where uploads keep failing,
-          it picks up a change once it's back online, or after you power-cycle it.</li>
-        <li>The operator list for each band shows who holds spectrum there, not where each band
-          is switched on. The survey shows what's actually live at a site.</li>
+        <li>Locking helps when one band is poor at a site and another is good. Run a band test
+          first to see which bands work there.</li>
+        <li>Locking doesn't help when every band is poor, for example in a shielded spot or
+          during a network outage.</li>
+        <li>If the locked bands stop working, the node removes the lock by itself within about
+          15 minutes and goes back to automatic.</li>
+        <li>The modem remembers the lock. <b>Restore automatic</b> clears it.</li>
+        <li><b>4G only</b> stops the modem dropping to slower 3G or 2G networks.</li>
+        <li>A node that can't get online won't see a change until it's back online, or until
+          you switch it off and on.</li>
+        <li>The networks listed under each band own that band. It doesn't mean the band is
+          switched on near the node. The band test shows what actually works there.</li>
       </ul>
     </details>
     <div class="route inline" id="lockMode" role="group" aria-label="Band selection">
@@ -390,35 +393,29 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
       <button type="button" id="lmLock" aria-pressed="false">Lock to bands</button>
     </div>
     <div class="bands" id="bandGrid"></div>
-    <label class="chk"><input type="checkbox" id="lteOnly"> LTE only (no 3G or 2G fallback)</label>
+    <label class="chk"><input type="checkbox" id="lteOnly"> 4G only (no 3G or 2G)</label>
     <label class="chk"><input type="checkbox" id="lockOk"> I've read the notes above</label>
     <div class="btnrow">
-      <button type="button" id="lockApply" disabled style="flex:1">Apply band setting</button>
+      <button type="button" id="lockApply" disabled style="flex:1">Apply</button>
       <button type="button" class="ghost" id="lockAuto" disabled>Restore automatic</button>
     </div>
     <div class="link" id="lockStatus">&nbsp;</div>
 
     <hr>
-    <h3>Band survey</h3>
-    <p class="hint" style="margin:-4px 0 14px">The node tries each band on its own for up to a
-      minute, notes the signal and whether data gets through, then goes back to its own band
-      setting. It takes up to about 20 minutes and holds up one reading while it runs. The results
-      show here once the node reports them.</p>
-    <button type="button" id="surveyGo" disabled>Start band survey</button>
+    <h3>Band test</h3>
+    <button type="button" id="surveyGo" disabled>Start band test</button>
     <div class="link" id="surveyStatus" style="margin-top:12px">&nbsp;</div>
     <button type="button" class="ghost" id="useSuggest" hidden>Use the suggested bands</button>
 
     <hr>
-    <h3>Deployment note</h3>
-    <label><span class="lbl">Saved with the node's record</span>
+    <h3>Notes</h3>
+    <label><span class="lbl">Saved with this node</span>
       <textarea id="devNote" maxlength="500" placeholder="Eg: SAAQIS site, locked B1 after survey"></textarea>
     </label>
     <button type="button" class="ghost" id="noteSave" disabled>Save note</button>
 
     <hr>
-    <h3>MongoDB entry</h3>
-    <p class="hint" style="margin:-4px 0 14px">Builds this node's document for the dashboard
-      database in the same layout you paste in. Fill in the _id yourself after pasting.</p>
+    <h3>Dashboard entry</h3>
     <div class="row2">
       <label><span class="lbl">Name</span><input id="mgName"></label>
       <label><span class="lbl">Visibility</span>
@@ -430,20 +427,43 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
       <label><span class="lbl">Province</span><input id="mgProv"></label>
       <label><span class="lbl">City</span><input id="mgCity"></label>
     </div>
-    <button type="button" class="ghost" id="mgLookup" disabled style="margin:-6px 0 14px">Look up province and city from GPS</button>
+    <button type="button" class="ghost" id="mgLookup" disabled style="margin:-6px 0 14px">Look up province and city from the location</button>
     <textarea id="mgOut" readonly spellcheck="false" style="min-height:250px;font-family:var(--mono);font-size:12.5px"></textarea>
-    <button type="button" class="ghost" id="mgCopy" disabled>Copy for MongoDB</button>
+    <button type="button" class="ghost" id="mgCopy" disabled>Copy</button>
   </div>
 </div>
 
-<div class="card">
-  <h2>Status &amp; logs</h2>
-  <div class="log" id="log"><div class="idle">Waiting for a node.</div></div>
-  <p class="hint" style="margin-top:14px">The log above follows the node while it joins.
-    Once it's online, its setup network and <code>ESP32-Provision-XXXX</code> stay up for
-    ten minutes, and the node's own setup page shows whether it is online and how many
-    readings it has sent. On LTE, give the first join up to two minutes, since a cold
-    cellular attach is slow.</p>
+<div class="card" id="paneProg">
+  <h2>Progress</h2>
+  <div class="prog" id="prog">
+    <div class="prog-top"><span id="progLabel">Fill in the details, then press Connect &amp; send.</span></div>
+    <div class="stepper" role="progressbar" aria-labelledby="progLabel" aria-valuemin="0"
+      aria-valuemax="100" aria-valuenow="0" id="progBar">
+      <div class="track"><div class="fill" id="progFill"></div></div>
+      <ol class="stages" id="stages">
+        <li><span class="dot">1</span><span class="name">Find the node</span></li>
+        <li><span class="dot">2</span><span class="name">Send details</span></li>
+        <li><span class="dot">3</span><span class="name">Save</span></li>
+        <li><span class="dot">4</span><span class="name">Finish</span></li>
+      </ol>
+    </div>
+  </div>
+  <details class="logwrap"><summary>Show details</summary>
+    <div class="log" id="log"><div class="idle">Nothing yet.</div></div>
+  </details>
+</div>
+
+<div class="done" id="done" role="dialog" aria-modal="true" aria-labelledby="doneTitle">
+  <div class="box">
+    <svg class="tick" viewBox="0 0 104 104" aria-hidden="true">
+      <circle cx="52" cy="52" r="46"/>
+      <path d="M32 54 l13 13 l27 -29"/>
+    </svg>
+    <h2 id="doneTitle">Node is provisioned</h2>
+    <p>Contact a technician to add it to the dashboard.</p>
+    <div class="nodeid" id="doneId"></div>
+    <button type="button" id="doneClose">Done</button>
+  </div>
 </div>
 
 </div>
@@ -496,14 +516,6 @@ function log(line, kind) {
   l.appendChild(d); l.scrollTop = l.scrollHeight;
 }
 
-const CARRIER_HINT = {
-  wifi: 'The node uploads over WiFi only. This is the original behaviour.',
-  lte:  'The node uploads over the COM.LTE modem only. The network fields are not '
-      + 'used and are not sent, and the Vodacom APN is built into the firmware, so '
-      + 'there is nothing else to fill in. Setup still happens over the node\u2019s '
-      + 'own WiFi or over Bluetooth, exactly as it does now.'
-};
-
 function setCarrier(v) {
   carrier = v;
   $('cWifi').setAttribute('aria-pressed', v === 'wifi');
@@ -513,7 +525,6 @@ function setCarrier(v) {
   $('wifiFields').hidden = !wifi;
   $('ssid').required = wifi;
   $('pass').required = wifi && !$('open').checked;
-  $('carrierhint').textContent = CARRIER_HINT[v];
 
   if (!wifi) stopScan();
   buildLink();
@@ -521,7 +532,6 @@ function setCarrier(v) {
 $('cWifi').onclick = () => setCarrier('wifi');
 $('cLte').onclick  = () => setCarrier('lte');
 
-// Ticks or unticks "no password", which empties and locks the password box while it's ticked
 function setOpen(on) {
   $('open').checked = on;
   $('pass').disabled = on;
@@ -530,23 +540,20 @@ function setOpen(on) {
 }
 $('open').onchange = function () { setOpen(this.checked); buildLink(); };
 
-// Checks WiFi details against the limits WiFi sets and gives back a plain reason they can't
-// work, or an empty string when they look fine
 function wifiProblem(ssid, pass, user, open) {
   const bytes = new TextEncoder().encode(ssid).length;
-  if (!ssid.trim()) return 'Fill in the SSID.';
-  if (bytes > 32) return 'That network name is ' + bytes + ' bytes long and WiFi allows 32 at most.';
-  if (user) return pass ? '' : 'A network that asks for a username needs a password too.';
+  if (!ssid.trim()) return 'Fill in the WiFi network name.';
+  if (bytes > 32) return 'That network name is too long. WiFi names can be at most 32 characters.';
+  if (user) return pass ? '' : 'A network with a username needs a password too.';
   if (open) return '';
-  if (!pass) return 'Fill in the password, or tick "This network has no password".';
-  if (pass.length < 8) return 'WiFi passwords are at least 8 characters and this one is ' + pass.length + '.';
-  if (pass.length > 64) return 'WiFi passwords are at most 63 characters and this one is ' + pass.length + '.';
+  if (!pass) return 'Fill in the WiFi password, or tick "This network has no password".';
+  if (pass.length < 8) return 'WiFi passwords have at least 8 characters, and this one has ' + pass.length + '. Check it.';
+  if (pass.length > 64) return 'WiFi passwords have at most 63 characters, and this one has ' + pass.length + '. Check it.';
   if (pass.length === 64 && !/^[0-9a-fA-F]+$/.test(pass))
-    return 'A 64-character WiFi password has to be a hex key (only 0-9 and a-f).';
+    return 'A 64-character WiFi password can only use the digits 0 to 9 and the letters a to f. Check it.';
   return '';
 }
 
-// Only the node's own setup page may be the place this page sends a captured position back to
 let relayTo = null;
 (function () {
   const raw = new URLSearchParams(location.search).get('return');
@@ -565,18 +572,18 @@ function relayFinish(lat, lon) {
   const a = $('relayback');
   a.href = relayTo + (relayTo.indexOf('?') < 0 ? '?' : '&') + u.toString();
   a.classList.remove('off');
-  a.textContent = lat !== null ? 'Back to the node with these coordinates'
-                               : 'Back to the node without coordinates';
+  a.textContent = lat !== null ? 'Back to the node with this location'
+                               : 'Back to the node without a location';
 }
 
 function relayCapture() {
-  $('relaystate').textContent = 'Asking for your location\u2026';
+  $('relaystate').textContent = 'Getting your location\u2026';
   navigator.geolocation.getCurrentPosition(p => {
-    $('relaystate').innerHTML = 'Position <b>' + p.coords.latitude.toFixed(6) + ', '
+    $('relaystate').innerHTML = 'Location <b>' + p.coords.latitude.toFixed(6) + ', '
       + p.coords.longitude.toFixed(6) + '</b> \u00b1' + Math.round(p.coords.accuracy) + ' m';
     relayFinish(p.coords.latitude, p.coords.longitude);
   }, err => {
-    $('relaystate').textContent = 'Could not get a location: ' + err.message;
+    $('relaystate').textContent = 'Couldn\u2019t get your location. Allow location access for this page and try again.';
     relayFinish(null, null);
   }, { enableHighAccuracy: true, timeout: 20000 });
 }
@@ -590,7 +597,7 @@ if (relayTo) {
   $('relayretry').onclick = relayCapture;
 
   if (navigator.geolocation) relayCapture();
-  else { $('relaystate').textContent = 'This browser will not share a location.';
+  else { $('relaystate').textContent = 'This browser can\u2019t share a location.';
          relayFinish(null, null); }
 }
 
@@ -601,6 +608,7 @@ function route(which) {
   $('paneWifi').hidden   = !wifi;
   $('paneDev').hidden    = !dev;
   $('paneConfig').hidden = dev;
+  $('paneProg').hidden = wifi;
   $('tabBle').setAttribute('aria-pressed', ble);
   $('tabWifi').setAttribute('aria-pressed', wifi);
   $('tabDev').setAttribute('aria-pressed', dev);
@@ -619,7 +627,7 @@ async function forgetRemembered(announce) {
     }
   } catch (e) { }
   if (announce) {
-    log(n ? 'forgot ' + n + ' remembered node(s)' : 'no remembered nodes to forget', 'hi');
+    log(n ? 'cleared ' + n + ' saved node(s)' : 'no saved nodes to clear', 'hi');
   }
   return n;
 }
@@ -627,9 +635,9 @@ forgetRemembered(false);
 
 $('forget').onclick = async () => {
   await forgetRemembered(true);
-  forgetLink('Not connected. Press Connect &amp; send to pick the node again.');
-  say('Remembered nodes cleared. If the field count is still wrong, the browser is '
-    + 'holding a cached copy of the node\u2019s services \u2014 see the note in the log.', 'info');
+  forgetLink('Not connected. Press Connect &amp; send to choose the node again.');
+  say('Saved nodes cleared. Press Connect & send to try again. If it still goes wrong, '
+    + 'follow the steps in the progress box below.', 'info');
   cacheAdvice();
 };
 
@@ -637,16 +645,14 @@ if (!navigator.bluetooth) {
   route('wifi');
   $('tabBle').disabled = true;
   $('send').disabled = true;
-  $('link').innerHTML = 'This browser has no Bluetooth. Use the node&rsquo;s WiFi instead.';
-  say('This browser cannot use Bluetooth, which is the case for every browser on '
-    + 'iPhone and iPad. The WiFi route below works.', 'info');
+  $('link').innerHTML = 'This browser can&rsquo;t use Bluetooth. Use the steps below instead.';
+  say('This browser can\u2019t use Bluetooth. No browser on an iPhone or iPad can, and neither '
+    + 'can Safari on a Mac. Follow the three steps below instead.', 'info');
 }
 
 function parseWifiQr(text) {
   if (!/^WIFI:/i.test(text)) return null;
   const out = {};
-  // openQ and closeQ note whether the value started and ended with a quote that wasn't
-  // escaped, since some generators wrap the name and password in quotes
   let key = '', val = '', esc = false, onKey = true, openQ = false, closeQ = false;
   const flush = () => {
     if (key) {
@@ -680,7 +686,7 @@ function parseWifiQr(text) {
 
 async function startScan() {
   if (!navigator.mediaDevices || !window.jsQR) {
-    return say('This browser will not open the camera here. Type the network name '
+    return say('This browser can\u2019t open the camera here. Type the WiFi name '
              + 'and password instead.', 'err');
   }
   try {
@@ -688,8 +694,8 @@ async function startScan() {
       video: { facingMode: { ideal: 'environment' } }, audio: false
     });
   } catch (e) {
-    return say('The camera was refused. Allow camera access for this page in your '
-             + 'browser settings, or type the network details in by hand.', 'err');
+    return say('Camera access was blocked. Allow the camera for this page in your '
+             + 'browser settings, or type the WiFi details in.', 'err');
   }
 
   const video = $('cam');
@@ -698,7 +704,7 @@ async function startScan() {
   await video.play();
 
   $('scanner').hidden = false;
-  $('scanmsg').textContent = 'Point at the WiFi QR code';
+  $('scanmsg').textContent = 'Point the camera at the WiFi QR code';
   scanning = true;
 
   const canvas = document.createElement('canvas');
@@ -715,7 +721,7 @@ async function startScan() {
       if (found) {
         const wifi = parseWifiQr(found.data);
         if (wifi) { applyWifi(wifi); return; }
-        $('scanmsg').textContent = 'That code is not a WiFi code';
+        $('scanmsg').textContent = 'That QR code isn\u2019t a WiFi code';
       }
     }
     requestAnimationFrame(tick);
@@ -732,22 +738,20 @@ function applyWifi(w) {
   buildLink();
   log('scanned network ' + w.ssid + (w.enterprise ? ' (enterprise)' : w.open ? ' (no password)' : ''), 'hi');
   say(w.enterprise
-      ? 'Scanned ' + w.ssid + '. Enterprise network \u2014 check the username is your '
-        + 'account name before sending.'
+      ? 'Scanned ' + w.ssid + '. This network needs a username, so check it before sending.'
       : w.open ? 'Scanned ' + w.ssid + '. It has no password, so you can send straight away.'
       : 'Scanned ' + w.ssid + '. Check the password came through, then send.', 'ok');
 }
 
 function cacheAdvice() {
-  log('\u2014 the browser is probably caching an old copy of this node \u2014', 'no');
+  log('The browser may be remembering an old copy of this node. To clear it:', 'no');
   log('1. Windows Settings \u2192 Bluetooth & devices \u2192 remove ESP32-Provision', 'no');
   log('2. chrome://settings/content/bluetoothDevices \u2192 delete this site', 'no');
   log('3. chrome://bluetooth-internals/#devices \u2192 Forget the device', 'no');
-  log('4. restart the browser, power-cycle the node, try again', 'no');
-  say('This node is reporting fewer fields than it has. Either the browser is holding '
-    + 'a cached copy of its services, or the node is running firmware older than '
-    + 'v1.1.0 and has no carrier fields \u2014 the steps to clear the cache are in the '
-    + 'log below.', 'err');
+  log('4. Close and reopen the browser, switch the node off and on, and try again', 'no');
+  say('The node didn\u2019t show all its settings. Either the browser is remembering an old '
+    + 'copy of it, or the node\u2019s software is very old. The steps to fix it are in the '
+    + 'progress box below.', 'err');
 }
 
 function stopScan() {
@@ -769,16 +773,16 @@ function coords(txt) {
 }
 
 $('geo').onclick = () => {
-  if (!navigator.geolocation) return say('This browser will not share a location.', 'err');
-  $('geo').disabled = true; $('geo').textContent = 'Capturing\u2026';
+  if (!navigator.geolocation) return say('This browser can\u2019t share a location. Paste a Google Maps link instead.', 'err');
+  $('geo').disabled = true; $('geo').textContent = 'Getting your location\u2026';
   navigator.geolocation.getCurrentPosition(p => {
     $('gps').value = p.coords.latitude.toFixed(6) + ',' + p.coords.longitude.toFixed(6);
-    $('geo').disabled = false; $('geo').textContent = 'Auto capture GPS';
-    log('GPS captured: ' + $('gps').value, 'hi');
+    $('geo').disabled = false; $('geo').textContent = 'Use my current location';
+    log('location captured: ' + $('gps').value, 'hi');
     buildLink();
   }, () => {
-    $('geo').disabled = false; $('geo').textContent = 'Auto capture GPS';
-    say('Location was refused. Paste a Maps link into the GPS box instead.', 'err');
+    $('geo').disabled = false; $('geo').textContent = 'Use my current location';
+    say('Location access was blocked. Allow it for this page, or paste a Google Maps link into the Location box.', 'err');
   }, { enableHighAccuracy: true, timeout: 15000 });
 };
 
@@ -786,7 +790,6 @@ function buildLink() {
   const p = new URLSearchParams();
   const add = (k, v) => { if (v) p.set(k, v); };
 
-  // The SSID goes across exactly as typed, since spaces at either end are part of the name
   const open = $('open').checked;
   add('link', carrier);
   if (carrier !== 'lte') {
@@ -810,7 +813,7 @@ function buildLink() {
   a.href = ready ? url : '#';
   a.classList.toggle('off', !ready);
   a.textContent = ready ? 'Open the node\u2019s setup page'
-                        : (!$('desc').value.trim() ? 'Fill in the description first' : problem);
+                        : (!$('desc').value.trim() ? 'Fill in the node name first' : problem);
   $('hlink').textContent = url;
 }
 
@@ -832,7 +835,7 @@ $('copylink').onclick = async function () {
     this.textContent = 'Copied';
     setTimeout(() => { this.textContent = 'Copy setup link'; }, 2000);
   } catch (e) {
-    say('Copy did not work. Select the link and copy it by hand.', 'info');
+    say('Copying didn\u2019t work. Select the link and copy it yourself.', 'info');
   }
 };
 
@@ -847,10 +850,11 @@ async function connect() {
   device = await navigator.bluetooth.requestDevice({
     filters: [{ services: [SERVICE] }], optionalServices: [SERVICE]
   });
+  progress('connect', 0.6, 'Connecting to your node\u2026', 'busy');
   device.addEventListener('gattserverdisconnected', () => {
-    forgetLink('Bluetooth link dropped &mdash; expected once the node starts joining. '
-             + 'Press Connect &amp; send again to reconnect.');
-    log('bluetooth disconnected', 'no');
+    forgetLink('Bluetooth disconnected. That\u2019s normal once the node starts connecting. '
+             + 'Press Connect &amp; send if you need to send again.');
+    log('Bluetooth disconnected', 'no');
   });
 
   const server = await device.gatt.connect();
@@ -862,10 +866,9 @@ async function connect() {
     } catch (e) {
       if (attempt === 0) { await new Promise(r => setTimeout(r, 400)); continue; }
       forgetLink('Not connected.');
-      throw new Error('That node is not accepting settings. Either it has already '
-        + 'been provisioned and closed its setup window, or the link came up before '
-        + 'it was ready. Power-cycle it, give it about 40 seconds, and try again \u2014 '
-        + 'or press "Erase stored settings" on its own setup page.');
+      throw new Error('The node isn\u2019t accepting settings right now. It may already be set '
+        + 'up, or it wasn\u2019t ready yet. Switch it off and on, wait about 40 seconds and try '
+        + 'again. To set up a node again from scratch, hold its BOOT button for 5 seconds first.');
     }
   }
   const missing = [];
@@ -874,17 +877,17 @@ async function connect() {
     catch (e) { chars[k] = null; missing.push(k); }
   }
   const found = Object.keys(CH).length - missing.length;
-  log('service found, ' + found + ' of ' + Object.keys(CH).length
-      + ' fields available', found === EXPECTED_CHARS ? 'hi' : 'no');
+  log('connected, ' + found + ' of ' + Object.keys(CH).length
+      + ' settings available', found === EXPECTED_CHARS ? 'hi' : 'no');
 
   if (missing.length) {
-    log('missing: ' + missing.join(', '), 'no');
+    log('not available: ' + missing.join(', '), 'no');
     cacheAdvice();
   }
 
   if (chars.mac) {
     try { mac = new TextDecoder().decode(await chars.mac.readValue()); }
-    catch (e) { log('could not read the MAC: ' + e.message, 'no'); }
+    catch (e) { log('couldn\u2019t read the node ID: ' + e.message, 'no'); }
   }
 
   if (chars.status) {
@@ -893,7 +896,7 @@ async function connect() {
       chars.status.addEventListener('characteristicvaluechanged',
         e => log(new TextDecoder().decode(e.target.value)));
     } catch (e) {
-      log('no live status from this node: ' + e.message, 'no');
+      log('this node can\u2019t show live progress', 'no');
     }
   }
 
@@ -901,20 +904,20 @@ async function connect() {
     try {
       await chars.prog.startNotifications();
       chars.prog.addEventListener('characteristicvaluechanged',
-        e => log('firmware update ' + new TextDecoder().decode(e.target.value) + '%'));
+        e => log('software update ' + new TextDecoder().decode(e.target.value) + '%'));
     } catch (e) {
-      log('no update progress from this node', 'no');
+      log('this node can\u2019t show update progress', 'no');
     }
   }
 
   $('link').innerHTML = 'Linked to <b>' + (mac || device.name || 'node') + '</b>';
   log('connected to ' + (mac || device.name || 'node'), 'hi');
-  if (!mac) log('no MAC read \u2014 the node will write its own record instead', 'no');
+  if (!mac) log('couldn\u2019t read the node ID, so the node will add itself to the list', 'no');
 }
 
 async function write(key, text) {
   if (!chars[key]) {
-    log('skipped ' + key + ': this node\u2019s firmware has no such field', 'no');
+    log('skipped ' + key + ': this node\u2019s software doesn\u2019t have it', 'no');
     return false;
   }
   try {
@@ -922,7 +925,7 @@ async function write(key, text) {
     await new Promise(r => setTimeout(r, 140));
     return true;
   } catch (e) {
-    log('could not write ' + key + ': ' + e.message, 'no');
+    log('couldn\u2019t send ' + key + ': ' + e.message, 'no');
     return false;
   }
 }
@@ -938,7 +941,6 @@ async function record(method) {
       wifi: {
         ssid: $('ssid').value,
         ...(SEND_PASSWORD ? { password: $('pass').value } : {}),
-        // Always sent, so a blank username clears an old one from the record
         username: $('user').value.trim()
       }
     } : {}),
@@ -953,17 +955,50 @@ async function record(method) {
       body: JSON.stringify(payload)
     });
     const out = await res.json();
-    log(res.ok ? 'recorded in ' + out.file : 'record rejected: ' + JSON.stringify(out),
+    log(res.ok ? 'saved to the node list (' + out.file + ')'
+               : 'couldn\u2019t save to the node list: ' + JSON.stringify(out),
         res.ok ? 'hi' : 'no');
   } catch (e) {
-    log('could not record: ' + e.message, 'no');
+    log('couldn\u2019t save to the node list: ' + e.message, 'no');
   }
+}
+
+const STAGES = ['connect', 'send', 'save', 'done'];
+const STAGE_NAMES = [
+  { todo: 'Find the node', now: 'Finding the node', did: 'Node found', bad: 'Not found' },
+  { todo: 'Send details',  now: 'Sending details',  did: 'Details sent', bad: 'Not sent' },
+  { todo: 'Save',          now: 'Saving',           did: 'Saved', bad: 'Not saved' },
+  { todo: 'Finish',        now: 'Finishing',        did: 'All done' }
+];
+
+let progFrac = 0;
+
+function progress(stage, frac, label, state) {
+  const p = $('prog');
+  p.classList.toggle('busy', state === 'busy');
+  p.classList.toggle('fail', state === 'fail');
+  p.classList.toggle('ok', state === 'ok');
+  const at = STAGES.indexOf(stage);
+  progFrac = Math.max(0, Math.min(1, frac));
+  const pct = state === 'ok' ? 100
+            : Math.round(Math.min(at + progFrac, STAGES.length - 1) / (STAGES.length - 1) * 100);
+  $('progFill').style.width = pct + '%';
+  $('progBar').setAttribute('aria-valuenow', pct);
+  $('progLabel').textContent = label;
+  document.querySelectorAll('#stages li').forEach((li, i) => {
+    const did = i < at || (state === 'ok' && i <= at);
+    li.className = did ? 'did' : i === at ? (state === 'fail' ? 'bad' : state === 'busy' ? 'now' : '') : '';
+    li.querySelector('.dot').textContent = did ? '\u2713' : li.className === 'bad' ? '!' : String(i + 1);
+    const n = STAGE_NAMES[i];
+    li.querySelector('.name').textContent = did ? n.did : li.className === 'now' ? n.now
+      : li.className === 'bad' ? n.bad : n.todo;
+  });
 }
 
 $('send').onclick = async () => {
   const needWifi = carrier !== 'lte';
   if (!$('desc').value.trim()) {
-    return say('Fill in the description first.', 'err');
+    return say('Fill in the node name first.', 'err');
   }
   const open = $('open').checked;
   if (needWifi) {
@@ -973,30 +1008,40 @@ $('send').onclick = async () => {
 
   stopScan();
   const b = $('send'); b.disabled = true; b.textContent = 'Connecting\u2026';
+  let stage = 'connect';
+  progress('connect', 0.2, 'Choose your node from the list that pops up.', 'busy');
   try {
     if (!chars.ssid) {
-      say('Pick your node from the list your browser shows.', 'info');
-      log('opening the device picker', 'hi');
+      say('Choose your node (ESP32-Provision-\u2026) from the list your browser shows.', 'info');
+      log('choosing the node', 'hi');
       await connect();
     }
+    stage = 'send';
     b.textContent = 'Sending\u2026';
-    log('writing settings', 'hi');
+    log('sending settings', 'hi');
+
+    const c = coords($('gps').value);
+    const steps = (chars.link ? 1 : 0) + (needWifi ? 4 : 2) + (needWifi ? 1 : 0) + (c ? 1 : 0);
+    let sent = 0;
+    const sendOne = async (k, v) => {
+      const ok = await write(k, v);
+      sent++;
+      progress('send', sent / steps, 'Sending your details to the node (' + sent + ' of ' + steps + ')\u2026', 'busy');
+      return ok;
+    };
+    progress('send', 0, 'Node found. Sending your details\u2026', 'busy');
 
     if (chars.link) {
-      await write('link', carrier);
+      await sendOne('link', carrier);
     } else if (carrier !== 'wifi') {
-      throw new Error('This node has no carrier field, so it is running firmware '
-        + 'older than v1.1.0 and cannot be put on LTE. Flash the current build over '
-        + 'USB first, or provision it for WiFi.');
+      throw new Error('This node\u2019s software is too old to use LTE. Choose WiFi, '
+        + 'or ask a technician to update it.');
     }
 
-    // A single zero byte reaches the node as an empty value. That's how a blank username
-    // clears an old one, and how "no password" is sent for an open network
     const NONE = '\0';
     const user = $('user').value.trim();
-    if (needWifi) await write('user', user || NONE);
-    const c = coords($('gps').value);
-    if (c) await write('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
+    if (needWifi) await sendOne('user', user || NONE);
+    if (c) await sendOne('gps', c[0].toFixed(6) + ',' + c[1].toFixed(6));
 
     const required = needWifi
       ? [['ssid', $('ssid').value],
@@ -1006,42 +1051,61 @@ $('send').onclick = async () => {
       : [['desc', $('desc').value.trim()],
          ['type', $('type').value]];
 
+    const NAMES = { ssid: 'WiFi network name', pass: 'WiFi password', desc: 'node name',
+                    type: 'indoor or outdoor setting' };
     for (const [k, v] of required) {
-      if (!await write(k, v)) {
-        throw new Error('The node would not accept the ' + k + ' field, so it has '
-          + 'not been provisioned. Power-cycle it and try again.');
+      if (!await sendOne(k, v)) {
+        throw new Error('The node didn\u2019t accept the ' + (NAMES[k] || k) + ', so it isn\u2019t '
+          + 'set up yet. Switch it off and on and try again.');
       }
     }
 
-    say(carrier === 'lte'
-        ? 'Config sent. The node brings the modem up now; a cold attach takes up to two '
-          + 'minutes. Watch the log.'
-        : 'Config sent. The node joins the network now. Watch the log.',
-        'ok');
+    stage = 'save';
+    progress('save', 0.5, 'Details sent. Saving the node\u2026', 'busy');
     await record('ble');
+    progress('done', 1, 'All done. Your node is set up.', 'ok');
+    say(carrier === 'lte'
+        ? 'Details sent. The node is connecting over LTE, which can take up to two minutes.'
+        : 'Details sent. The node is connecting to the WiFi now.',
+        'ok');
+    setTimeout(showDone, 700);
   } catch (err) {
-    say('Failed: ' + err.message, 'err');
-    log(err.message, 'no');
     forgetLink('Not connected. Press Connect &amp; send to try again.');
+    if (err && err.name === 'NotFoundError') {
+      progress('connect', 0, 'No node chosen. Press Connect & send to try again.', '');
+      $('msg').className = 'msg';
+      log('no node chosen', 'no');
+    } else {
+      progress(stage, progFrac,
+               stage === 'connect' ? 'Couldn\u2019t connect to the node. See the message at the top.'
+               : stage === 'send' ? 'Couldn\u2019t send your details. See the message at the top.'
+               : 'Couldn\u2019t save the node. See the message at the top.', 'fail');
+      say('Failed: ' + err.message, 'err');
+      log(err.message, 'no');
+    }
   }
   b.disabled = false; b.textContent = 'Connect & send';
 };
+
+function showDone() {
+  $('doneId').textContent = mac ? 'Node ID: ' + mac : '';
+  $('done').classList.add('on');
+  $('doneClose').focus();
+}
+$('doneClose').onclick = () => $('done').classList.remove('on');
+$('done').addEventListener('click', e => { if (e.target === $('done')) $('done').classList.remove('on'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('done').classList.remove('on'); });
 
 window.addEventListener('beforeunload', () => {
   try { if (device && device.gatt && device.gatt.connected) device.gatt.disconnect(); }
   catch (e) { }
 });
 
-// ---------------------------------------------------------------------------------------------
-// Developer tab. The worker checks the developer password on every change, so the tab's
-// controls only matter once the worker has accepted it
-// ---------------------------------------------------------------------------------------------
 const FW_RAW = 'https://raw.githubusercontent.com/Bobo-Reddy/Bobo-s_Upgraded_ESP32/main/firmware/portal/';
 const FW_MAX_BYTES = 2031616;
 const ELEVATION_URL = 'https://api.open-meteo.com/v1/elevation';
 const ALT_MIN = -50, ALT_MAX = 3000;
 
-// The bands a lock may use, with the frequency and the operators that hold spectrum there
 const LOCK_BANDS = [
   { b: 1,  f: '2100 MHz FDD', ops: 'Vodacom, MTN, Cell C, Telkom' },
   { b: 3,  f: '1800 MHz FDD', ops: 'Vodacom, MTN, Cell C, Telkom, Rain' },
@@ -1154,7 +1218,7 @@ $('lockOk').addEventListener('change', devButtons);
 $('devmac').addEventListener('keydown', e => { if (e.key === 'Enter') $('devLoad').click(); });
 $('devLoad').onclick = async () => {
   const m = macNorm($('devmac').value);
-  if (!m) return say('That isn’t a MAC address. It should look like AA:BB:CC:DD:EE:FF.', 'err');
+  if (!m) return say('That isn’t a node ID. It should look like AA:BB:CC:DD:EE:FF.', 'err');
   devMac = m;
   $('devmac').value = m;
   await devRefresh(true);
@@ -1167,7 +1231,7 @@ async function devRefresh(loud) {
     const j = await res.json();
     if (!j.found && j.msg) throw new Error(j.msg);
     devRec = j.found ? j.config : null;
-    if (loud) log(j.found ? 'loaded record for ' + devMac : 'no record yet for ' + devMac, j.found ? 'hi' : 'no');
+    if (loud) log(j.found ? 'loaded ' + devMac : devMac + ' isn\u2019t in the node list yet', j.found ? 'hi' : 'no');
   } catch (e) {
     if (loud) say('Couldn’t load that node: ' + e.message, 'err');
     return;
@@ -1188,20 +1252,30 @@ function devRender(fillForm) {
                                                     : (p.last_provisioned || 'never'))
       + '<br>' + healthText(r)
       + '<br>' + readText(r)
-    : 'No record for ' + esc(devMac) + ' yet. Settings sent now are kept for when it first reports.';
+    : esc(devMac) + ' isn\u2019t in the node list yet. Anything you send now is kept until it first checks in.';
 
-  // Firmware: what was requested against what the node reports running
   const runFw = s.fw || p.running_fw || '';
   let fwTxt = 'No update requested from here. The node runs ' + esc(runFw || 'an unknown version') + '.';
   if (r.firmware_version) {
-    fwTxt = runFw === r.firmware_version
-      ? '<b>Applied.</b> The node runs ' + esc(runFw) + '.'
-      : 'Requested ' + esc(r.firmware_version) + ' (' + esc(r.firmware_size || '?') + ' bytes). The node runs '
+    const ota = r.last_ota || {};
+    const otaSame = ota.version === r.firmware_version;
+    if (runFw === r.firmware_version) {
+      fwTxt = '<b>Applied.</b> The node runs ' + esc(runFw) + '.';
+    } else if (otaSame && ota.result === 'installed') {
+      fwTxt = '<b>Installed, but the node reports ' + esc(runFw || '?') + '.</b> The build published as '
+        + esc(r.firmware_version) + ' has a different version inside it, so the node will keep '
+        + 'installing it at every sync. Send ' + esc(runFw || 'the version it runs')
+        + ' to stop it, then publish a build whose FW_VERSION matches its folder.';
+    } else if (otaSame && ota.result) {
+      fwTxt = 'Requested ' + esc(r.firmware_version) + '. Last attempt: ' + esc(ota.result)
+        + (ota.detail ? ' (' + esc(ota.detail) + ')' : '') + '. The node still runs ' + esc(runFw || '?') + '.';
+    } else {
+      fwTxt = 'Requested ' + esc(r.firmware_version) + ' (' + esc(r.firmware_size || '?') + ' bytes). The node runs '
         + esc(runFw || '?') + ', so it hasn\u2019t installed it yet. Waiting for its next sync or reboot.';
+    }
   }
   $('fwStatus').innerHTML = fwTxt;
 
-  // Reading interval: requested against what the node reports using
   const wantRate = typeof r.sampling_rate === 'number' ? r.sampling_rate : null;
   $('rateStatus').innerHTML = wantRate === null
     ? 'No interval requested. The node uses ' + (s.sampling_rate || 320) + ' s.'
@@ -1210,7 +1284,6 @@ function devRender(fillForm) {
          + ', so it hasn\u2019t picked it up yet.');
   if (fillForm) $('rateS').value = wantRate || s.sampling_rate || 320;
 
-  // Altitude: the requested value against what the SEN66 confirmed
   const a = r.altitude || {};
   let altTxt;
   if (typeof a.set_m !== 'number') {
@@ -1226,7 +1299,6 @@ function devRender(fillForm) {
   $('altStatus').innerHTML = altTxt;
   if (fillForm && typeof a.set_m === 'number' && !$('altM').value) $('altM').value = a.set_m;
 
-  // CO2 self-calibration: the requested state against what the SEN66 reports
   const c = r.co2_asc || {};
   const onOff = v => v ? 'on' : 'off';
   let ascTxt;
@@ -1244,7 +1316,6 @@ function devRender(fillForm) {
   }
   $('ascStatus').innerHTML = ascTxt;
 
-  // Band lock: the request against what the node reports it did
   const l = r.lte || {};
   let lockTxt;
   if (!l.lock_id) {
@@ -1272,8 +1343,7 @@ function devRender(fillForm) {
 
   if (fillForm) mongoFill();
 
-  // Survey, with the bands the node suggests locking to
-  let svTxt = 'No survey requested.';
+  let svTxt = 'No band test run yet.';
   const done = l.survey_id && l.survey_id_done === l.survey_id;
   const sugg = done ? String(l.survey_suggest || '').split(',').map(Number).filter(Boolean) : [];
   const sv = l.survey || {};
@@ -1285,8 +1355,8 @@ function devRender(fillForm) {
       ? '<b>Finished.</b>' + (svRows ? '<br>' + svRows : '')
         + (sugg.length
             ? '<br>Suggested lock: <b>' + sugg.map(b => 'B' + b).join(' and ') + '</b>, the best signal'
-              + (sugg.length > 1 ? 's' : '') + ' that passed data. Lock only if the node has trouble on automatic.'
-            : '<br>No band passed data, so a lock won\u2019t help here.')
+              + (sugg.length > 1 ? 's' : '') + ' that got data through. Only lock if the node has trouble on automatic.'
+            : '<br>No band got data through, so locking won\u2019t help here.')
       : 'Requested. Waiting for the node to run it.';
   }
   $('surveyStatus').innerHTML = svTxt;
@@ -1297,16 +1367,18 @@ function devRender(fillForm) {
   devWatch();
 }
 
-// "Last read its settings" line, from the status block the node last reported
 function readText(r) {
   const c = (r.status || {}).config_read;
   if (!c) return 'Last read its settings: not reported yet (needs v1.3.2 or later).';
+  if (!c.ok && !c.at && !c.http && !c.via) {
+    return 'Last read its settings: not yet since this boot. A node that was just set up sends '
+      + 'its settings first and reads them back at its next sync.';
+  }
   const when = c.at ? new Date(c.at * 1000).toLocaleString() : 'time unknown';
   return 'Last read its settings: ' + esc(when) + ', '
     + (c.ok ? '<b>OK</b>' : '<b>failed</b> (HTTP ' + esc(c.http) + '), retrying at the next reading');
 }
 
-// One line on how the node is doing, from the status block it reports every few hours
 function healthText(r) {
   const s = r.status;
   if (!s) return 'No health report yet (needs v1.3.2 or later).';
@@ -1325,8 +1397,10 @@ function healthText(r) {
   const sn = s.sensor || {};
   if (sn.present === false) parts.push('<b>SEN66 not found</b>');
   else if (sn.problems) parts.push('<b>SEN66: ' + esc(sn.problems) + '</b>');
-  if (s.cell) parts.push('LTE band ' + esc(s.cell.band) + ', RSRP ' + esc(s.cell.rsrp) + ' dBm');
-  else if (typeof s.wifi_rssi === 'number') parts.push('WiFi ' + esc(s.wifi_rssi) + ' dBm');
+  if (s.cell) parts.push('LTE band ' + esc(s.cell.band) + ', RSRP ' + esc(s.cell.rsrp) + ' dBm'
+    + (r.link === 'wifi' ? ' (reported before the switch to WiFi)' : ''));
+  else if (typeof s.wifi_rssi === 'number') parts.push('WiFi ' + esc(s.wifi_rssi) + ' dBm'
+    + (r.link === 'lte' ? ' (reported before the switch to LTE)' : ''));
   const rec = r.last_recovery;
   if (rec && rec.reason) parts.push('last recovery restart: ' + esc(rec.reason)
     + (rec.at ? ' at ' + esc(new Date(rec.at * 1000).toLocaleString()) : ''));
@@ -1338,10 +1412,9 @@ function healthText(r) {
 
 function bandsText(bands, rat) {
   const b = Array.isArray(bands) ? 'bands ' + bands.join(', ') : 'automatic bands';
-  return b + (rat === 'lte' ? ', LTE only' : '');
+  return b + (rat === 'lte' ? ', 4G only' : '');
 }
 
-// While something is waiting on the node, the record is checked again every minute
 function devWatch() {
   const r = devRec || {}, a = r.altitude || {}, l = r.lte || {}, c = r.co2_asc || {};
   const altWaiting = typeof a.set_m === 'number' && a.applied_m !== Math.max(0, Math.round(a.set_m));
@@ -1349,13 +1422,14 @@ function devWatch() {
   const lockWaiting = l.lock_id && l.lock_id_applied !== l.lock_id;
   const svWaiting = l.survey_id && l.survey_id_done !== l.survey_id;
   const runFw = (r.status || {}).fw || (r.provisioning || {}).running_fw;
-  const fwWaiting = r.firmware_version && runFw !== r.firmware_version;
+  const ota = r.last_ota || {};
+  const fwWaiting = r.firmware_version && runFw !== r.firmware_version &&
+                    !(ota.version === r.firmware_version && ota.result === 'installed');
   const rateWaiting = typeof r.sampling_rate === 'number' && (r.status || {}).sampling_rate !== r.sampling_rate;
   clearInterval(devPoll);
   if (altWaiting || ascWaiting || lockWaiting || svWaiting || fwWaiting || rateWaiting) devPoll = setInterval(() => devRefresh(false), 60000);
 }
 
-// Altitude capture
 async function elevationAt(lat, lon) {
   const res = await fetch(ELEVATION_URL + '?latitude=' + lat.toFixed(6) + '&longitude=' + lon.toFixed(6));
   const j = await res.json();
@@ -1364,29 +1438,29 @@ async function elevationAt(lat, lon) {
 }
 
 async function altFrom(lat, lon, where, gpsAlt, gpsAcc) {
-  $('altSrc').textContent = 'Looking up the ground height at ' + lat.toFixed(5) + ', ' + lon.toFixed(5) + '…';
+  $('altSrc').textContent = 'Looking up the height at ' + lat.toFixed(5) + ', ' + lon.toFixed(5) + '…';
   try {
     const dem = await elevationAt(lat, lon);
     altSource = where;
     let t = 'Ground height at ' + where + ' (' + lat.toFixed(5) + ', ' + lon.toFixed(5) + '): <b>'
-      + Math.round(dem) + ' m</b> above sea level. Copernicus DEM GLO-90 via Open-Meteo.';
+      + Math.round(dem) + ' m</b> above sea level, from a terrain map.';
     if (typeof gpsAlt === 'number') {
-      t += '<br>Your phone’s GPS height: ' + Math.round(gpsAlt) + ' m'
+      t += '<br>Your phone’s own GPS height: ' + Math.round(gpsAlt) + ' m'
         + (gpsAcc ? ' ±' + Math.round(gpsAcc) + ' m' : '')
-        + '. That’s height above the GPS reference shape, not sea level, so it’s only for comparison.';
+        + '. That isn’t measured from sea level, so use the map height above.';
     }
     $('altSrc').innerHTML = t;
     $('altM').value = Math.round(dem);
     $('altOk').checked = false;
     devButtons();
   } catch (e) {
-    $('altSrc').textContent = 'The terrain lookup didn’t work (' + e.message + '). Type the altitude in by hand.';
+    $('altSrc').textContent = 'Couldn’t look up the height (' + e.message + '). Type it in yourself.';
   }
 }
 
 $('altNode').onclick = () => {
   const g = (devRec || {}).gps || {};
-  altFrom(g.lat, g.lon, 'the node’s stored position');
+  altFrom(g.lat, g.lon, 'the node’s saved location');
 };
 $('altHere').onclick = () => {
   $('altSrc').textContent = 'Asking for your location…';
@@ -1407,7 +1481,7 @@ $('altSend').onclick = async () => {
     await devPost({ mac: devMac, method: 'developer',
                     altitude: { set_m: v, source: altSource || 'typed in', requested_at: new Date().toISOString() } });
     log('altitude ' + v + ' m sent for ' + devMac, 'hi');
-    say('Altitude sent. The node applies it at its next config sync or reboot, and this page checks every minute.', 'ok');
+    say('Altitude sent. The node uses it within about 16 minutes, or straight away if you switch it off and on. This page updates by itself.', 'ok');
     $('altOk').checked = false;
     await devRefresh(false);
   } catch (e) {
@@ -1416,14 +1490,13 @@ $('altSend').onclick = async () => {
   devButtons();
 };
 
-// CO2 self-calibration
 async function sendAsc(on) {
   $('ascOff').disabled = $('ascOn').disabled = true;
   try {
     await devPost({ mac: devMac, method: 'developer',
                     co2_asc: { set_enabled: on, requested_at: new Date().toISOString() } });
     log('CO2 self-calibration ' + (on ? 'on' : 'off') + ' sent for ' + devMac, 'hi');
-    say('ASC ' + (on ? 'on' : 'off') + ' sent. The node applies it at its next config sync or reboot, and this page checks every minute.', 'ok');
+    say('Self-calibration ' + (on ? 'on' : 'off') + ' sent. The node uses it within about 16 minutes, or straight away if you switch it off and on. This page updates by itself.', 'ok');
     await devRefresh(false);
   } catch (e) {
     say('The ASC setting wasn’t saved: ' + e.message, 'err');
@@ -1433,7 +1506,6 @@ async function sendAsc(on) {
 $('ascOff').onclick = () => sendAsc(false);
 $('ascOn').onclick  = () => sendAsc(true);
 
-// Band lock
 function setLockMode(m) {
   lockMode = m;
   $('lmAuto').setAttribute('aria-pressed', m === 'auto');
@@ -1459,8 +1531,7 @@ async function sendLock(bands, rat, what) {
   try {
     await devPost({ mac: devMac, method: 'developer', lte: { bands, rat, lock_id: newId() } });
     log(what + ' sent for ' + devMac, 'hi');
-    say(what + ' sent. The node applies it at its next config sync or reboot. Power-cycle it if '
-      + 'it’s at a site where uploads keep failing.', 'ok');
+    say(what + ' sent. The node uses it within about 16 minutes, or straight away if you switch it off and on. This page updates by itself.', 'ok');
     $('lockOk').checked = false;
     await devRefresh(false);
   } catch (e) {
@@ -1471,7 +1542,7 @@ async function sendLock(bands, rat, what) {
 
 $('lockApply').onclick = () => {
   const rat = $('lteOnly').checked ? 'lte' : 'auto';
-  if (lockMode === 'auto') return sendLock('auto', rat, 'Automatic bands' + (rat === 'lte' ? ', LTE only,' : ''));
+  if (lockMode === 'auto') return sendLock('auto', rat, 'Automatic bands' + (rat === 'lte' ? ', 4G only,' : ''));
   const bands = [...document.querySelectorAll('#bandGrid input:checked')].map(cb => Number(cb.value));
   if (!bands.length) return say('Tick at least one band, or pick Automatic.', 'err');
   sendLock(bands, rat, 'Band lock ' + bands.join(', '));
@@ -1482,22 +1553,19 @@ $('lockAuto').onclick = () => {
   sendLock('auto', 'auto', 'Restore automatic');
 };
 
-// Survey and note
 $('surveyGo').onclick = async () => {
   $('surveyGo').disabled = true;
   try {
     await devPost({ mac: devMac, method: 'developer', lte: { survey_id: newId() } });
-    log('band survey requested for ' + devMac, 'hi');
-    say('Survey requested. The node runs it after its next config sync or reboot.', 'ok');
+    log('band test requested for ' + devMac, 'hi');
+    say('Band test requested. The node starts it within about 16 minutes, or straight away if you switch it off and on.', 'ok');
     await devRefresh(false);
   } catch (e) {
-    say('The survey request wasn’t saved: ' + e.message, 'err');
+    say('The band test request wasn’t saved: ' + e.message, 'err');
   }
   devButtons();
 };
 
-// MD5 of a byte array, as 32 lowercase hex characters. Browsers have no built-in MD5, and the
-// node checks the firmware it downloads against this
 function md5Hex(bytes) {
   const K = new Uint32Array(64);
   const S = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
@@ -1528,7 +1596,6 @@ function md5Hex(bytes) {
     .map(sh => ((x >>> sh) & 255).toString(16).padStart(2, '0')).join('')).join('');
 }
 
-// Where the node downloads a version from, which depends on its placement
 function fwUrl(ver) {
   const indoor = (devRec || {}).indoor_outdoor === IO_INDOOR;
   return FW_RAW + (indoor ? 'indoor/' : 'outdoor/') + ver + '/'
@@ -1537,11 +1604,9 @@ function fwUrl(ver) {
 
 $('fwVer').addEventListener('input', () => { fwBuild = null; $('fwInfo').innerHTML = '&nbsp;'; devButtons(); });
 
-// Downloads the published build, checks it's an app image that fits the node, and works out
-// the exact size and MD5 the node needs for the update
 $('fwCheck').onclick = async () => {
   const ver = $('fwVer').value.trim();
-  if (!/^v\d+\.\d+\.\d+[\w.-]{0,20}$/.test(ver)) return say('The version should look like v1.3.3.', 'err');
+  if (!/^v\d+\.\d+\.\d+[\w.-]{0,20}$/.test(ver)) return say('The version should look like v1.3.3, starting with a small v.', 'err');
   const url = fwUrl(ver);
   fwBuild = null;
   $('fwCheck').disabled = true;
@@ -1550,8 +1615,8 @@ $('fwCheck').onclick = async () => {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status === 404 ? 'nothing published at ' + url : 'HTTP ' + res.status);
     const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes[0] !== 0xE9) throw new Error('that file isn\u2019t an ESP32 app image. Use the app .bin, not the merged one');
-    if (bytes.length > FW_MAX_BYTES) throw new Error(bytes.length + ' bytes is too big for the node\u2019s update slot');
+    if (bytes[0] !== 0xE9) throw new Error('that file isn\u2019t a node update. Upload AIrMidRange.ino.bin, not the merged .bin');
+    if (bytes.length > FW_MAX_BYTES) throw new Error('it\u2019s ' + bytes.length + ' bytes, too big for the node');
     fwBuild = { ver, size: bytes.length, md5: md5Hex(bytes) };
     $('fwInfo').innerHTML = '<b>' + esc(ver) + '</b> &middot; ' + bytes.length + ' bytes &middot; MD5 ' + fwBuild.md5;
   } catch (e) {
@@ -1568,8 +1633,8 @@ $('fwSend').onclick = async () => {
                     firmware_size: fwBuild.size, firmware_md5: fwBuild.md5,
                     firmware_allow_downgrade: $('fwDown').checked });
     log('firmware ' + fwBuild.ver + ' sent for ' + devMac, 'hi');
-    say('Update sent. The node installs it at its next config sync (within about 16 minutes) and '
-      + 'this page checks every minute.', 'ok');
+    say('Update sent. The node installs it within about 16 minutes, or straight away if you switch '
+      + 'it off and on. This page updates by itself.', 'ok');
     await devRefresh(false);
   } catch (e) {
     say('The update wasn\u2019t saved: ' + e.message, 'err');
@@ -1585,7 +1650,7 @@ $('rateSend').onclick = async () => {
   try {
     await devPost({ mac: devMac, method: 'developer', sampling_rate: Number($('rateS').value) });
     log('reading interval ' + $('rateS').value + ' s sent for ' + devMac, 'hi');
-    say('Interval sent. The node picks it up at its next config sync.', 'ok');
+    say('Interval sent. The node uses it within about 16 minutes, or straight away if you switch it off and on. This page updates by itself.', 'ok');
     await devRefresh(false);
   } catch (e) {
     say('The interval wasn\u2019t saved: ' + e.message, 'err');
@@ -1593,7 +1658,6 @@ $('rateSend').onclick = async () => {
   devButtons();
 };
 
-// MongoDB entry: the node's record laid out the way the dashboard database expects it
 const REVERSE_GEO_URL = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 
 let lastSeenMs = NaN;
@@ -1611,7 +1675,6 @@ function mongoFill() {
   if (r.gps && typeof r.gps.lat === 'number') mongoLookup();
 }
 
-// Quotes a value for the mongo shell, escaping backslashes and single quotes
 function mq(v) { return "'" + String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'"; }
 
 function mongoBuild() {
@@ -1642,14 +1705,11 @@ function mongoBuild() {
 ['mgName', 'mgDesc', 'mgProv', 'mgCity'].forEach(id => $(id).addEventListener('input', mongoBuild));
 $('mgVis').addEventListener('change', mongoBuild);
 
-// The node's status report arrives every few hours while it's online, so its time is a better
-// "last seen" than the record's last provisioning
 function mongoLastSeen() {
   const t = Date.parse(((devRec || {}).status || {}).received_at || '');
   if (!isNaN(t) && (isNaN(lastSeenMs) || t > lastSeenMs)) { lastSeenMs = t; mongoBuild(); }
 }
 
-// Fills province and city from the node's GPS. They stay editable either way
 async function mongoLookup() {
   const g = (devRec || {}).gps || {};
   if (typeof g.lat !== 'number') return;
@@ -1661,7 +1721,7 @@ async function mongoLookup() {
     $('mgCity').value = j.city || j.locality || '';
     mongoBuild();
   } catch (e) {
-    say('Couldn\u2019t look up the province and city. Type them in.', 'info');
+    say('Couldn\u2019t look up the province and city. Type them in yourself.', 'info');
   }
 }
 $('mgLookup').onclick = mongoLookup;
@@ -1673,17 +1733,16 @@ $('mgCopy').onclick = async function () {
     setTimeout(() => { this.textContent = 'Copy for MongoDB'; }, 2000);
   } catch (e) {
     $('mgOut').select();
-    say('Copy didn\u2019t work. The text is selected; copy it by hand.', 'info');
+    say('Copying didn\u2019t work. The text is selected, so copy it yourself.', 'info');
   }
 };
 
-// Ticks the suggested bands in the band lock section. Nothing is sent until Apply
 $('useSuggest').onclick = () => {
   const want = ($('useSuggest').dataset.bands || '').split(',').map(Number);
   setLockMode('lock');
   document.querySelectorAll('#bandGrid input').forEach(cb => { cb.checked = want.includes(Number(cb.value)); });
   $('lockMode').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  say('Suggested bands ticked. Read the notes, tick the box and press Apply to send the lock.', 'info');
+  say('Suggested bands ticked. Read the notes, tick the box and press Apply.', 'info');
 };
 
 $('noteSave').onclick = async () => {
