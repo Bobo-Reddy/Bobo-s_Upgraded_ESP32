@@ -1177,6 +1177,7 @@ $('devpw').addEventListener('keydown', e => { if (e.key === 'Enter') $('devUnloc
 
 $('devRelock').onclick = () => {
   devPw = ''; ssSet('sacaqm-dev-pw', '');
+  $('msg').className = 'msg';
   clearInterval(devPoll);
   devUnlocked(false);
 };
