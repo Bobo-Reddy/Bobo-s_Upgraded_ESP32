@@ -7,15 +7,16 @@
 <title>SACAQM Node Configuration</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@125,700;125,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#070c0e; --shell:#0f171a; --shell2:#131e22; --edge:#1e2c31; --edge2:#2a3c42;
   --chalk:#e6edef; --vapor:#8ba0a7; --dim:#5d7077;
   --b1:#3de0b4; --b2:#c8dd57; --b3:#e8a13f; --b4:#e2544a;
-  --display:'Anybody',system-ui,sans-serif;
-  --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --display:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --code:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -29,9 +30,9 @@ body{margin:0;min-height:100vh;background:var(--void);color:var(--chalk);
 .wrap{max-width:600px;margin:0 auto;padding:0 20px}
 
 header{padding:42px 0 8px}
-.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--dim)}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;color:var(--dim)}
 h1{font-family:var(--display);font-size:clamp(29px,7.6vw,40px);font-weight:800;
-  line-height:1.03;letter-spacing:-.01em;margin:12px 0 10px;
+  line-height:1.05;letter-spacing:-.025em;margin:10px 0 10px;
   background:linear-gradient(96deg,var(--chalk) 32%,var(--b1));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .sub{color:var(--vapor);font-size:15px;max-width:46ch}
@@ -50,18 +51,18 @@ h1{font-family:var(--display);font-size:clamp(29px,7.6vw,40px);font-weight:800;
   border:1px solid var(--edge);border-radius:14px;padding:22px;margin-bottom:16px;
   box-shadow:0 22px 54px -38px #000}
 .card h2{font-family:var(--display);font-size:17px;font-weight:700;margin:0 0 6px;
-  letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+  letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .card h2::after{content:"";flex:1;height:1px;background:var(--edge)}
 .card .lede{color:var(--vapor);font-size:14px;margin:0 0 18px}
-.link{font-family:var(--mono);font-size:12px;color:var(--vapor);letter-spacing:.03em;
+.link{font-family:var(--mono);font-size:13px;color:var(--vapor);
   border:1px dashed var(--edge2);border-radius:10px;padding:12px 14px;margin-bottom:18px}
 .link b{color:var(--b1);font-weight:500}
 
 label{display:block;margin:0 0 17px}
-.lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+.lbl{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
   color:var(--dim);display:flex;justify-content:space-between;align-items:center;
   margin-bottom:6px}
-.lbl a{color:var(--b1);text-decoration:none;letter-spacing:.08em;cursor:pointer}
+.lbl a{color:var(--b1);text-decoration:none;cursor:pointer}
 .hint{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.5}
 .chk{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--vapor);margin:-6px 0 17px}
 .chk input{width:auto;margin:0}
@@ -109,7 +110,7 @@ ol.steps li b{color:var(--chalk);font-weight:600}
 ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:24px;height:24px;
   border-radius:7px;background:#0a1215;border:1px solid var(--edge2);
   font-family:var(--mono);font-size:11.5px;color:var(--b1);display:grid;place-items:center}
-.ssidchip{font-family:var(--mono);font-size:13px;background:#0a1215;
+.ssidchip{font-family:var(--code);font-size:13px;background:#0a1215;
   border:1px solid var(--edge2);padding:2px 7px;border-radius:5px;color:var(--b1)}
 .fallbackline{font-size:12.5px;color:var(--dim);margin-top:12px;text-align:center}
 .fallbackline a{color:var(--vapor);cursor:pointer}
@@ -121,7 +122,7 @@ ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:24px
 .msg.err {background:rgba(226,84,74,.08); color:var(--b4);border-color:rgba(226,84,74,.3)}
 .msg.info{background:rgba(232,161,63,.08);color:var(--b3);border-color:rgba(232,161,63,.3)}
 
-.log{font-family:var(--mono);font-size:12px;color:var(--vapor);max-height:210px;
+.log{font-family:var(--mono);font-size:13px;color:var(--vapor);max-height:210px;
   overflow:auto;background:#0a1215;border:1px solid var(--edge);border-radius:10px;
   padding:12px 14px}
 .log div{padding:2px 0 2px 10px;border-left:2px solid var(--edge);margin-bottom:2px;
@@ -129,10 +130,10 @@ ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:24px
 .log div.hi{border-left-color:var(--b1);color:var(--chalk)}
 .log div.no{border-left-color:var(--b4);color:var(--b4)}
 .log .idle{border:0;padding-left:0;color:var(--dim)}
-code{font-family:var(--mono);font-size:13px;background:#0a1215;border:1px solid var(--edge2);
+code{font-family:var(--code);font-size:13px;background:#0a1215;border:1px solid var(--edge2);
   padding:2px 6px;border-radius:5px;color:var(--b1);overflow-wrap:anywhere}
-.card h3{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--b1);font-weight:500;margin:0 0 10px}
+.card h3{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--b1);margin:0 0 10px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
 .btnrow button.ghost{margin-top:0}
 .bands{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:0 0 14px}
@@ -428,7 +429,7 @@ details.logwrap summary{cursor:pointer;font-size:13px;color:var(--vapor);margin-
       <label><span class="lbl">City</span><input id="mgCity"></label>
     </div>
     <button type="button" class="ghost" id="mgLookup" disabled style="margin:-6px 0 14px">Look up province and city from the location</button>
-    <textarea id="mgOut" readonly spellcheck="false" style="min-height:250px;font-family:var(--mono);font-size:12.5px"></textarea>
+    <textarea id="mgOut" readonly spellcheck="false" style="min-height:250px;font-family:var(--code);font-size:12.5px"></textarea>
     <button type="button" class="ghost" id="mgCopy" disabled>Copy</button>
   </div>
 </div>
