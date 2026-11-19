@@ -190,6 +190,8 @@ textarea:focus{outline:none;border-color:var(--b1);box-shadow:0 0 0 3px rgba(61,
 .prog.busy .stages li.now .dot{animation:pulse 1.4s ease-out infinite}
 .stages li.bad .dot{color:#fff;border-color:transparent;background:var(--b4)}
 .stages li.bad .name{color:var(--b4)}
+.prog.ios .name,.prog.ios .stages li:last-child{display:none}
+.prog.ios .track{left:16.667%;right:16.667%}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 10px rgba(34,197,94,0)}}
 details.logwrap{margin-top:16px}
 details.logwrap summary{cursor:pointer;font-size:13px;color:var(--vapor);margin-bottom:8px}
@@ -301,7 +303,7 @@ details.logwrap summary{cursor:pointer;font-size:13px;color:var(--vapor);margin-
       them and press <b>Save and connect</b>.</li>
   </ol>
 
-  <a class="btnlink off" id="openNode" href="#" rel="noopener">Open the node's setup page</a>
+  <a class="btnlink off" id="openNode" href="#" target="_blank" rel="noopener">Open the node's setup page</a>
   <p class="fallbackline">Button not working? <a id="showcopy">Copy the link instead</a></p>
   <div id="copywrap" hidden style="margin-top:12px">
     <div class="link" id="hlink" style="color:var(--b1)"></div>
@@ -502,6 +504,57 @@ let chars = {}, mac = '', stream = null, scanning = false, device = null;
 
 let carrier = 'wifi';
 
+const STAGES = ['connect', 'send', 'save', 'done'];
+const STAGE_NAMES = [
+  { todo: 'Find the node', now: 'Finding the node', did: 'Node found', bad: 'Not found' },
+  { todo: 'Send details',  now: 'Sending details',  did: 'Details sent', bad: 'Not sent' },
+  { todo: 'Save',          now: 'Saving',           did: 'Saved', bad: 'Not saved' },
+  { todo: 'Finish',        now: 'Finishing',        did: 'All done' }
+];
+
+let progFrac = 0;
+let iosMode = false, iosSent = false;
+let bleProgress = ['connect', 0, 'Fill in the details, then press Connect & send.', ''];
+
+function iosProgress() {
+  progress(iosSent ? 'done' : 'connect', iosSent ? 1 : 0,
+           iosSent ? 'Your settings are on the node. Press Save and connect on the node\u2019s page to finish.'
+                   : 'Follow the three steps above.',
+           iosSent ? 'ok' : '');
+}
+
+function setProgressMode(ios) {
+  iosMode = ios;
+  $('prog').classList.toggle('ios', ios);
+  if (ios) iosProgress();
+  else progress.apply(null, bleProgress);
+}
+
+
+function progress(stage, frac, label, state) {
+  if (!iosMode) bleProgress = [stage, frac, label, state];
+  const p = $('prog');
+  p.classList.toggle('busy', state === 'busy');
+  p.classList.toggle('fail', state === 'fail');
+  p.classList.toggle('ok', state === 'ok');
+  const at = STAGES.indexOf(stage);
+  progFrac = Math.max(0, Math.min(1, frac));
+  const pct = state === 'ok' ? 100
+            : Math.round(Math.min(at + progFrac, STAGES.length - 1) / (STAGES.length - 1) * 100);
+  $('progFill').style.width = pct + '%';
+  $('progBar').setAttribute('aria-valuenow', pct);
+  $('progLabel').textContent = label;
+  document.querySelectorAll('#stages li').forEach((li, i) => {
+    const did = i < at || (state === 'ok' && i <= at);
+    li.className = did ? 'did' : i === at ? (state === 'fail' ? 'bad' : state === 'busy' ? 'now' : '') : '';
+    li.querySelector('.dot').textContent = did ? '\u2713' : li.className === 'bad' ? '!' : String(i + 1);
+    const n = STAGE_NAMES[i];
+    li.querySelector('.name').textContent = did ? n.did : li.className === 'now' ? n.now
+      : li.className === 'bad' ? n.bad : n.todo;
+  });
+}
+
+
 function forgetLink(why) {
   chars = {}; mac = ''; device = null;
   $('link').innerHTML = why;
@@ -609,7 +662,7 @@ function route(which) {
   $('paneWifi').hidden   = !wifi;
   $('paneDev').hidden    = !dev;
   $('paneConfig').hidden = dev;
-  $('paneProg').hidden = wifi;
+  if (!dev) setProgressMode(wifi);
   $('tabBle').setAttribute('aria-pressed', ble);
   $('tabWifi').setAttribute('aria-pressed', wifi);
   $('tabDev').setAttribute('aria-pressed', dev);
@@ -829,6 +882,12 @@ function buildLink() {
   }));
 $('type').addEventListener('change', buildLink);
 
+$('openNode').addEventListener('click', () => {
+  if ($('openNode').classList.contains('off')) return;
+  iosSent = true;
+  iosProgress();
+});
+
 $('showcopy').onclick = () => { $('copywrap').hidden = false; };
 $('copylink').onclick = async function () {
   try {
@@ -962,38 +1021,6 @@ async function record(method) {
   } catch (e) {
     log('couldn\u2019t save to the node list: ' + e.message, 'no');
   }
-}
-
-const STAGES = ['connect', 'send', 'save', 'done'];
-const STAGE_NAMES = [
-  { todo: 'Find the node', now: 'Finding the node', did: 'Node found', bad: 'Not found' },
-  { todo: 'Send details',  now: 'Sending details',  did: 'Details sent', bad: 'Not sent' },
-  { todo: 'Save',          now: 'Saving',           did: 'Saved', bad: 'Not saved' },
-  { todo: 'Finish',        now: 'Finishing',        did: 'All done' }
-];
-
-let progFrac = 0;
-
-function progress(stage, frac, label, state) {
-  const p = $('prog');
-  p.classList.toggle('busy', state === 'busy');
-  p.classList.toggle('fail', state === 'fail');
-  p.classList.toggle('ok', state === 'ok');
-  const at = STAGES.indexOf(stage);
-  progFrac = Math.max(0, Math.min(1, frac));
-  const pct = state === 'ok' ? 100
-            : Math.round(Math.min(at + progFrac, STAGES.length - 1) / (STAGES.length - 1) * 100);
-  $('progFill').style.width = pct + '%';
-  $('progBar').setAttribute('aria-valuenow', pct);
-  $('progLabel').textContent = label;
-  document.querySelectorAll('#stages li').forEach((li, i) => {
-    const did = i < at || (state === 'ok' && i <= at);
-    li.className = did ? 'did' : i === at ? (state === 'fail' ? 'bad' : state === 'busy' ? 'now' : '') : '';
-    li.querySelector('.dot').textContent = did ? '\u2713' : li.className === 'bad' ? '!' : String(i + 1);
-    const n = STAGE_NAMES[i];
-    li.querySelector('.name').textContent = did ? n.did : li.className === 'now' ? n.now
-      : li.className === 'bad' ? n.bad : n.todo;
-  });
 }
 
 $('send').onclick = async () => {
